@@ -38,7 +38,7 @@ ColumnLayout {
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: true
-                onClicked: Hyprland.dispatch("workspace " + wsId)
+                onClicked: Hyprland.dispatch("hl.dsp.focus({ workspace = " + wsId + " })")
                 onEntered: parent.hovered = true
                 onExited: parent.hovered = false
             }
