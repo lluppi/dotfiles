@@ -6,9 +6,9 @@ current=$(hyprctl getoption general:layout | awk '/str:/ { print $2 }')
 
 case "$current" in
   master)
-    hyprctl keyword general:layout dwindle >/dev/null
+    hyprctl eval 'hl.config({ general = { layout = "dwindle" } })' >/dev/null
     ;;
   dwindle|*)
-    hyprctl keyword general:layout master >/dev/null
+    hyprctl eval 'hl.config({ general = { layout = "master" } })' >/dev/null
     ;;
 esac

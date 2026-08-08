@@ -37,4 +37,4 @@ case "$direction" in
     ;;
 esac
 
-hyprctl dispatch movetoworkspacesilent "$target" >/dev/null
+hyprctl dispatch "hl.dsp.window.move({ workspace = $target, follow = false })" >/dev/null

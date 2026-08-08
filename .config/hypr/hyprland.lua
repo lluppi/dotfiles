@@ -37,9 +37,8 @@ local screenshotWindow  = "sh ~/.local/bin/screenshotssh.sh window"
 local runemacs          = "emacsclient -c -a emacs"
 local pickColor         = [[sh -lc 'command -v hyprpicker >/dev/null 2>&1 && hyprpicker -a || sh ~/.local/bin/xcolor.sh']]
 local toggleBar         = [[sh -lc 'if pgrep -x quickshell >/dev/null; then pkill -x quickshell; else quickshell >/dev/null 2>&1 & fi']]
-local toggleLayout      = [[sh -lc 'layout=$(hyprctl getoption general:layout | awk -F: '"'"'/str:/ {gsub(/^ /, "", $2); print $2}'"'"'); if [ "$layout" = "master" ]; then hyprctl keyword general:layout dwindle; else hyprctl keyword general:layout master; fi']]
-local gapsDown          = [[sh -lc 'g=$(hyprctl getoption general:gaps_in | awk '"'"'/int:/ {print $2}'"'"'); g=$((g > 0 ? g - 1 : 0)); hyprctl keyword general:gaps_in "$g"; hyprctl keyword general:gaps_out "$g"']]
-local gapsUp            = [[sh -lc 'g=$(hyprctl getoption general:gaps_in | awk '"'"'/int:/ {print $2}'"'"'); g=$((g + 1)); hyprctl keyword general:gaps_in "$g"; hyprctl keyword general:gaps_out "$g"']]
+local gapsDown          = [[sh -lc 'g=$(hyprctl getoption general:gaps_in | awk '"'"'/int:/ {print $2}'"'"'); g=$((g > 0 ? g - 1 : 0)); hyprctl eval "hl.config({ general = { gaps_in = $g, gaps_out = $g } })"']]
+local gapsUp            = [[sh -lc 'g=$(hyprctl getoption general:gaps_in | awk '"'"'/int:/ {print $2}'"'"'); g=$((g + 1)); hyprctl eval "hl.config({ general = { gaps_in = $g, gaps_out = $g } })"']]
 
 
 -------------------
@@ -64,10 +63,11 @@ hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("GTK_THEME", "Kool")
 hl.env("QT_STYLE_OVERRIDE", "adwaita-dark")
 hl.env("DISPLAY", ":0")
-hl.env("XDG_DATA_HOME", "$HOME/.local/share")
-hl.env("XDG_CONFIG_HOME", "$HOME/.config")
-hl.env("XDG_CACHE_HOME", "$HOME/.cache")
-hl.env("XDG_STATE_HOME", "$HOME/.local/state")
+local home = os.getenv("HOME") or "/home/lee"
+hl.env("XDG_DATA_HOME", home .. "/.local/share")
+hl.env("XDG_CONFIG_HOME", home .. "/.config")
+hl.env("XDG_CACHE_HOME", home .. "/.cache")
+hl.env("XDG_STATE_HOME", home .. "/.local/state")
 
 
 -----------------------

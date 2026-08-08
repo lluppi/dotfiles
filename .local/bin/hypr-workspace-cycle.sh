@@ -37,4 +37,4 @@ case "$direction" in
     ;;
 esac
 
-hyprctl dispatch workspace "$target" >/dev/null
+hyprctl dispatch "hl.dsp.focus({ workspace = $target })" >/dev/null
