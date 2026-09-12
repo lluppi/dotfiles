@@ -28,7 +28,7 @@ hl.monitor({
 local mainMod           = "SUPER"
 local terminal          = "ghostty"
 local fallbackTerminal  = "ghostty"
-local browser           = "librewolf"
+local browser           = "/home/lee/.local/bin/librewolf" -- wrapper so h264 works (arch ffmpeg9/libavcodec.so.63 is unlinkable by firefox)
 local menu              = "fuzzel"
 local music             = "ghostty -e ncmpcpp"
 local runterminal       = "ghostty"

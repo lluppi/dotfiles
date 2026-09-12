@@ -1,0 +1,12 @@
+#!/bin/sh
+# h264 workaround for librewolf 153 on arch: firefox's FFmpegRuntimeLinker only
+# knows libavcodec.so.53 ... .62, but arch now ships ffmpeg 9 (libavcodec.so.63).
+# without h264 all mp4/x-twitter video dies while vp9/av1 (youtube) still works.
+# to undo: delete this file, ~/.local/share/applications/librewolf.desktop and
+# ~/.local/lib/librewolf-ffmpeg8
+FFDIR="$HOME/.local/lib/librewolf-ffmpeg8"
+if [ -f "$FFDIR/libavcodec.so.62" ]; then
+  LD_LIBRARY_PATH="$FFDIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+  export LD_LIBRARY_PATH
+fi
+exec /usr/bin/librewolf "$@"
