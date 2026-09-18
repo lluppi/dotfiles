@@ -1,3 +1,16 @@
+##############################################################################
+# DEAD FILE - NOT LOADED BY HYPRLAND. DO NOT EDIT, YOUR CHANGES DO NOTHING.
+#
+# hyprland 0.56 was started with a hyprland.lua present, and the config manager
+# picks lua over hyprlang. proof, from hyprland's own log:
+#     [cfg] Regular config at /home/lee/.config/hypr/hyprland.lua
+#     [cfg] Using lua config found at /home/lee/.config/hypr/hyprland.lua
+#
+# the LIVE config is .config/hypr/hyprland.lua. edit that one.
+# this file is kept only as a reference/fallback and renamed to talk you out of
+# editing it. verified: every bind here exists in the lua (0 lost in the port).
+##############################################################################
+
 # Hyprland config ported from ~/.config/dwm/config.h
 
 # ################
