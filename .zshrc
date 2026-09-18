@@ -54,6 +54,23 @@ alias jz="~/clone/jetzig/cli/zig-out/bin/jetzig"
 alias cdc="cd ~/clone"
 alias c="claude"
 
+kp() {
+  if [ $# -eq 0 ]; then
+    echo "usage: kp <port> [port...]" >&2
+    return 1
+  fi
+  local port pids
+  for port in "$@"; do
+    pids=$(lsof -ti tcp:"$port" 2>/dev/null)
+    if [ -z "$pids" ]; then
+      echo "kp: nothing on port $port"
+      continue
+    fi
+    echo "kp: killing on port $port -> $pids"
+    echo "$pids" | xargs kill -9
+  done
+}
+
 eval "$(starship init zsh)"
 
 # bun completions
