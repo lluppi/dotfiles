@@ -99,12 +99,46 @@ if servers.has_npm_servers() then
     vim.lsp.config("cssls", with_defaults())
     vim.lsp.enable("cssls")
 
+    -- Projects with a local TypeScript 7 (e.g. patched by @effect/tsgo for Effect diagnostics)
+    -- get its native `tsc --lsp --stdio`; everything else keeps ts_ls. Exactly one attaches.
+    local function native_ts(root)
+        local pkg = root and vim.fs.joinpath(root, "node_modules/typescript/package.json")
+        if not pkg or vim.fn.filereadable(pkg) == 0 then return nil end
+        local ok, data = pcall(vim.json.decode, table.concat(vim.fn.readfile(pkg), "\n"))
+        local major = ok and type(data) == "table" and tonumber(tostring(data.version or ""):match("^(%d+)"))
+        local tsc = vim.fs.joinpath(root, "node_modules/.bin/tsc")
+        if major and major >= 7 and vim.fn.executable(tsc) == 1 then return tsc end
+    end
+
+    local function ts_root(bufnr)
+        return vim.fs.root(bufnr, { { "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lockb", "bun.lock" }, { ".git" } })
+    end
+
     vim.lsp.config("ts_ls", with_defaults({
+        root_dir = function(bufnr, on_dir)
+            local root = ts_root(bufnr) or vim.fn.getcwd()
+            if not native_ts(root) then on_dir(root) end
+        end,
         on_attach = function(client, _)
             client.server_capabilities.documentFormattingProvider = false
         end,
     }))
     vim.lsp.enable("ts_ls")
+
+    vim.lsp.config("tsgo", with_defaults({
+        cmd = function(dispatchers, config)
+            local tsc = native_ts(config.root_dir) or "tsc"
+            return vim.lsp.rpc.start({ tsc, "--lsp", "--stdio" }, dispatchers, { cwd = config.root_dir })
+        end,
+        root_dir = function(bufnr, on_dir)
+            local root = ts_root(bufnr)
+            if root and native_ts(root) then on_dir(root) end
+        end,
+        on_attach = function(client, _)
+            client.server_capabilities.documentFormattingProvider = false
+        end,
+    }))
+    vim.lsp.enable("tsgo")
 
     vim.lsp.config("svelte", with_defaults({
         on_attach = function(client, _)

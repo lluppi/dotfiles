@@ -31,7 +31,8 @@ local fallbackTerminal  = "ghostty"
 local browser           = "/home/lee/.local/bin/librewolf" -- wrapper so h264 works (arch ffmpeg9/libavcodec.so.63 is unlinkable by firefox)
 local menu              = "fuzzel"
 local runterminal       = "ghostty"
-local screenshotBox     = "sh ~/.local/bin/screenshotssh.sh box"
+local screenshotRegion  = "~/.local/bin/hgsm"         -- hover = hex loupe, click = copy that pixel's hex, drag = copy the region. absolute path: exec's PATH does not include ~/.local/bin
+local screenshotUpload  = "sh ~/.local/bin/screenshotssh.sh box"         -- old flow: slurp + scp to imre.al + copy the url
 local screenshotWindow  = "sh ~/.local/bin/screenshotssh.sh window"
 local pickColor         = "hyprpicker -a"
 local toggleBar         = [[sh -lc 'if pgrep -x quickshell >/dev/null; then pkill -x quickshell; else quickshell >/dev/null 2>&1 & fi']]
@@ -193,7 +194,7 @@ hl.gesture({
 ---------------------
 
 -- core app bindings
-hl.bind(mainMod .. " + RETURN",       hl.dsp.layout("swapwithmaster"))
+hl.bind(mainMod .. " + RETURN",       hl.dsp.exec_cmd("sh ~/.local/bin/hypr-swapwithmaster.sh"))
 hl.bind(mainMod .. " + ALT + RETURN", hl.dsp.exec_cmd(runterminal))
 hl.bind(mainMod .. " + R",            hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + B",            hl.dsp.exec_cmd(toggleBar))
@@ -209,7 +210,7 @@ hl.bind(mainMod .. " + Q",            hl.dsp.focus({ workspace = "previous" }))
 hl.bind(mainMod .. " + ALT + Q",      hl.dsp.exit())
 hl.bind(mainMod .. " + ALT + L",      hl.dsp.exec_cmd("qs -p ~/.config/quickshell/lock.qml"))
 hl.bind(mainMod .. " + ALT + C",      hl.dsp.window.close())
-hl.bind(mainMod .. " + TAB",          hl.dsp.layout("swapwithmaster"))
+hl.bind(mainMod .. " + TAB",          hl.dsp.exec_cmd("sh ~/.local/bin/hypr-swapwithmaster.sh"))
 hl.bind("ALT + TAB",                  hl.dsp.window.cycle_next())
 hl.bind("ALT + SHIFT + TAB",          hl.dsp.window.cycle_next({ next = false }))
 
@@ -238,7 +239,8 @@ hl.bind(mainMod .. " + ALT + O",      hl.dsp.window.move({ monitor = "+1" }))
 hl.bind(mainMod .. " + ALT + B",      hl.dsp.exec_cmd(browser))
 
 -- screenshots
-hl.bind(mainMod .. " + S",            hl.dsp.exec_cmd(screenshotBox))
+hl.bind(mainMod .. " + S",            hl.dsp.exec_cmd(screenshotRegion))
+hl.bind(mainMod .. " + SHIFT + S",    hl.dsp.exec_cmd(screenshotUpload))
 hl.bind(mainMod .. " + ALT + S",      hl.dsp.exec_cmd(screenshotWindow))
 
 -- workspaces
