@@ -40,6 +40,7 @@ home/
 │   ├── executable_starship.toml
 │   ├── hypr/ quickshell/ fuzzel/ gtk-3.0/ gtk-4.0/ librewolf/   # linux only
 ├── private_dot_local/          # linux only: bin/ scripts, gtk theme
+├── run_after_librewolf-userchrome.sh.tmpl  # linux: links userChrome.css into every librewolf profile
 ├── dot_aerospace.toml          # macos only
 ├── dot_hammerspoon/            # macos only
 └── private_Library/            # macos only: lazygit symlink

@@ -1,0 +1,25 @@
+{{- if eq .chezmoi.os "linux" -}}
+#!/bin/sh
+# librewolf only reads userChrome.css from <profile>/chrome/, and profile dir
+# names are random per install, so link every profile in profiles.ini to the
+# chezmoi-managed copy. runs after each apply; idempotent.
+set -eu
+
+src="$HOME/.config/librewolf/userChrome.css"
+root="$HOME/.librewolf"
+ini="$root/profiles.ini"
+
+[ -f "$src" ] && [ -f "$ini" ] || exit 0
+
+awk -F= '
+	/^\[/        { if (path != "") print rel "\t" path; path = ""; rel = 1 }
+	$1 == "Path"       { path = substr($0, 6) }
+	$1 == "IsRelative" { rel = $2 }
+	END          { if (path != "") print rel "\t" path }
+' "$ini" | while IFS="	" read -r rel path; do
+	[ "$rel" = 1 ] && path="$root/$path"
+	[ -d "$path" ] || continue
+	mkdir -p "$path/chrome"
+	ln -sfn "$src" "$path/chrome/userChrome.css"
+done
+{{ end -}}
