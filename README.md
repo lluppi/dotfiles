@@ -1,8 +1,5 @@
 # dotfiles
 
-one repo for arch (linux) and macos, managed with [chezmoi](https://chezmoi.io)
-
-## details
 
 | component | linux | macos |
 |-----------|-------|-------|
@@ -10,7 +7,7 @@ one repo for arch (linux) and macos, managed with [chezmoi](https://chezmoi.io)
 | bar | quickshell | hammerspoon |
 | terminal | ghostty | ghostty |
 | editor | neovim | neovim |
-| shell | zsh (oh-my-zsh) | zsh |
+| shell | zsh | zsh |
 | prompt | starship | starship |
 | git ui | lazygit | lazygit |
 | browser | librewolf | - |
@@ -26,21 +23,6 @@ chezmoi init --source ~/clone/dotfiles   # writes ~/.config/chezmoi/chezmoi.toml
 chezmoi diff                             # see what would change
 chezmoi apply
 ```
-
-## day to day
-
-- edit in the repo (`chezmoi cd` or `~/clone/dotfiles/home`), then `chezmoi apply`
-- or edit a live file, then `chezmoi re-add` to pull it back into the repo (nvim's `lazy-lock.json` after `:Lazy update`)
-- `chezmoi diff` before applying; commit and push from the repo like normal
-
-## how os gating works
-
-- `.chezmoiroot` points chezmoi at `home/`, which mirrors `$HOME` in chezmoi naming (`dot_config` = `.config`, `executable_` = +x, `private_` = 0700, `symlink_` = symlink, `.tmpl` = go template)
-- `home/.chezmoiignore` skips linux-only files on macos (hypr, quickshell, fuzzel, gtk, librewolf, `.local/bin`, themes) and macos-only files on linux (aerospace, hammerspoon, `Library/`)
-- small differences live in templates: `ghostty/config.tmpl` (`{{ if eq .chezmoi.os "darwin" }}`)
-- big differences live in per-os files: `.zshrc` is shared and sources `~/.config/zsh/darwin.zsh` or `linux.zsh`
-- lazygit's config is `~/.config/lazygit/config.yml` on both; on macos `~/Library/Application Support/lazygit/config.yml` is a symlink to it
-
 ## structure
 
 ```
