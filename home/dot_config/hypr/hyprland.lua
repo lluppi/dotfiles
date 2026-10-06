@@ -28,14 +28,13 @@ hl.monitor({
 local mainMod           = "SUPER"
 local terminal          = "ghostty"
 local fallbackTerminal  = "ghostty"
-local browser           = "librewolf"
+local browser           = "/home/lee/.local/bin/librewolf" -- wrapper so h264 works (arch ffmpeg9/libavcodec.so.63 is unlinkable by firefox)
 local menu              = "fuzzel"
-local music             = "ghostty -e ncmpcpp"
 local runterminal       = "ghostty"
-local screenshotBox     = "sh ~/.local/bin/screenshotssh.sh box"
+local screenshotRegion  = "~/.local/bin/hgsm"         -- hover = hex loupe, click = copy that pixel's hex, drag = copy the region. absolute path: exec's PATH does not include ~/.local/bin
+local screenshotUpload  = "sh ~/.local/bin/screenshotssh.sh box"         -- old flow: slurp + scp to imre.al + copy the url
 local screenshotWindow  = "sh ~/.local/bin/screenshotssh.sh window"
-local runemacs          = "emacsclient -c -a emacs"
-local pickColor         = [[sh -lc 'command -v hyprpicker >/dev/null 2>&1 && hyprpicker -a || sh ~/.local/bin/xcolor.sh']]
+local pickColor         = "hyprpicker -a"
 local toggleBar         = [[sh -lc 'if pgrep -x quickshell >/dev/null; then pkill -x quickshell; else quickshell >/dev/null 2>&1 & fi']]
 local gapsDown          = [[sh -lc 'g=$(hyprctl getoption general:gaps_in | awk '"'"'/int:/ {print $2}'"'"'); g=$((g > 0 ? g - 1 : 0)); hyprctl eval "hl.config({ general = { gaps_in = $g, gaps_out = $g } })"']]
 local gapsUp            = [[sh -lc 'g=$(hyprctl getoption general:gaps_in | awk '"'"'/int:/ {print $2}'"'"'); g=$((g + 1)); hyprctl eval "hl.config({ general = { gaps_in = $g, gaps_out = $g } })"']]
@@ -48,7 +47,6 @@ local gapsUp            = [[sh -lc 'g=$(hyprctl getoption general:gaps_in | awk 
 hl.on("hyprland.start", function()
     hl.exec_cmd("quickshell")
     hl.exec_cmd("awww-daemon")
-    hl.exec_cmd("nm-applet --indicator")
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
     hl.exec_cmd("gnome-keyring-daemon --start --components=secrets")
 end)
@@ -196,13 +194,11 @@ hl.gesture({
 ---------------------
 
 -- core app bindings
-hl.bind(mainMod .. " + RETURN",       hl.dsp.layout("swapwithmaster"))
+hl.bind(mainMod .. " + RETURN",       hl.dsp.exec_cmd("sh ~/.local/bin/hypr-swapwithmaster.sh"))
 hl.bind(mainMod .. " + ALT + RETURN", hl.dsp.exec_cmd(runterminal))
 hl.bind(mainMod .. " + R",            hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + B",            hl.dsp.exec_cmd(toggleBar))
-hl.bind(mainMod .. " + E",            hl.dsp.exec_cmd(runemacs))
 hl.bind(mainMod .. " + C",            hl.dsp.exec_cmd(pickColor))
-hl.bind(mainMod .. " + P",            hl.dsp.exec_cmd("mpc toggle"))
 
 -- window management
 hl.bind(mainMod .. " + J",            hl.dsp.layout("cyclenext"))
@@ -214,7 +210,7 @@ hl.bind(mainMod .. " + Q",            hl.dsp.focus({ workspace = "previous" }))
 hl.bind(mainMod .. " + ALT + Q",      hl.dsp.exit())
 hl.bind(mainMod .. " + ALT + L",      hl.dsp.exec_cmd("qs -p ~/.config/quickshell/lock.qml"))
 hl.bind(mainMod .. " + ALT + C",      hl.dsp.window.close())
-hl.bind(mainMod .. " + TAB",          hl.dsp.layout("swapwithmaster"))
+hl.bind(mainMod .. " + TAB",          hl.dsp.exec_cmd("sh ~/.local/bin/hypr-swapwithmaster.sh"))
 hl.bind("ALT + TAB",                  hl.dsp.window.cycle_next())
 hl.bind("ALT + SHIFT + TAB",          hl.dsp.window.cycle_next({ next = false }))
 
@@ -240,11 +236,11 @@ hl.bind(mainMod .. " + O",            hl.dsp.focus({ monitor = "+1" }))
 hl.bind(mainMod .. " + ALT + O",      hl.dsp.window.move({ monitor = "+1" }))
 
 -- common apps
-hl.bind(mainMod .. " + ALT + M",      hl.dsp.exec_cmd(music))
 hl.bind(mainMod .. " + ALT + B",      hl.dsp.exec_cmd(browser))
 
 -- screenshots
-hl.bind(mainMod .. " + S",            hl.dsp.exec_cmd(screenshotBox))
+hl.bind(mainMod .. " + S",            hl.dsp.exec_cmd(screenshotRegion))
+hl.bind(mainMod .. " + SHIFT + S",    hl.dsp.exec_cmd(screenshotUpload))
 hl.bind(mainMod .. " + ALT + S",      hl.dsp.exec_cmd(screenshotWindow))
 
 -- workspaces
@@ -261,8 +257,6 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true })
 hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true })
 hl.bind("XF86AudioNext",         hl.dsp.exec_cmd("playerctl next"),       { locked = true })
 hl.bind("XF86AudioPause",        hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
@@ -315,6 +309,25 @@ hl.window_rule({
     tile  = true,
 })
 
+-- steam spawns transient X11 helper windows with class "steam" and an EMPTY
+-- title for its dropdown menus / submenus / tooltips. hyprland was treating
+-- them as real toplevels: matching steam-float, animating them and grabbing
+-- focus for them, which made steam tear them back down ~100ms after they
+-- showed up. that is the "menus and modals flash then vanish" bug.
+-- no_initial_focus keeps the compositor from auto-focusing them; a click
+-- still focuses them normally, so this cannot make a window unfocusable.
+hl.window_rule({
+    name              = "steam-popup-nofocus",
+    match             = { class = "^steam$", title = "^$" },
+    no_initial_focus  = true,
+})
+
+hl.window_rule({
+    name    = "steam-popup-noanim",
+    match   = { class = "^steam$", title = "^$" },
+    no_anim = true,
+})
+
 hl.window_rule({
     name  = "xdg-portal-float",
     match = { class = "^xdg-desktop-portal-gtk$" },
@@ -352,3 +365,19 @@ hl.window_rule({
     match    = { title = "^(MSCTFIME UI)$" },
     no_focus = true,
 })
+
+-------------------------------------------------------------------------------
+---- DEAD REFERENCES STRIPPED (2026-09-18) ------------------------------------
+-------------------------------------------------------------------------------
+-- these were bound here but the package was never installed, so they only ever
+-- failed silently or flashed an empty terminal. install the package and re-add
+-- the binding if you want it back (the old lines are in git history):
+--
+--   XF86MonBrightnessUp / XF86MonBrightnessDown  ->  pacman -S brightnessctl
+--   SUPER + E            (emacsclient -c -a emacs) ->  pacman -S emacs
+--   SUPER + P            (mpc toggle)              ->  pacman -S mpc
+--   SUPER + ALT + M      (ghostty -e ncmpcpp)      ->  pacman -S ncmpcpp
+--   exec-once nm-applet  (tray applet)             ->  pacman -S network-manager-applet
+--
+-- also dropped: the pickColor fallback to ~/.local/bin/xcolor.sh, which does
+-- not exist - hyprpicker is installed so pickColor is now just `hyprpicker -a`.
