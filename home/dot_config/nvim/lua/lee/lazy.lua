@@ -18,7 +18,7 @@ require("lazy").setup({
         lazy = false,
         dependencies = {
             { "nvim-treesitter/nvim-treesitter-textobjects" },
-            { "romgrk/nvim-treesitter-context" },
+            { "nvim-treesitter/nvim-treesitter-context" },
         },
         config = function()
             local treesitter = require("nvim-treesitter")
@@ -67,40 +67,20 @@ require("lazy").setup({
         end,
     },
 
-    { "onsails/lspkind.nvim" },
-
-    -- autocompletion
-    { "hrsh7th/cmp-nvim-lsp" },
-
+    -- autocompletion (config in after/plugin/completion.lua)
     {
-        "hrsh7th/nvim-cmp",
+        "saghen/blink.cmp",
+        version = "1.*", -- release tags ship the prebuilt fuzzy matcher
         dependencies = {
-            { "neovim/nvim-lspconfig" },
-            { "hrsh7th/cmp-buffer" },
-            { "hrsh7th/cmp-path" },
-            { "hrsh7th/cmp-cmdline" },
-            { "saadparwaiz1/cmp_luasnip" },
-            {
-                "L3MON4D3/LuaSnip",
-                build = "make install_jsregexp",
-                dependencies = {
-                    { "rafamadriz/friendly-snippets" },
-                },
-            },
-            { "petertriho/cmp-git" },
+            "rafamadriz/friendly-snippets",
+            "Kaiser-Yang/blink-cmp-git",
         },
     },
 
     "folke/which-key.nvim",
     "folke/trouble.nvim",
 
-    {
-        "numToStr/Comment.nvim",
-        config =
-            function()
-                require("Comment").setup()
-            end,
-    },
+    -- commenting is built in (gc / gcc) since nvim 0.10
 
     { "windwp/nvim-autopairs" },
 
@@ -223,13 +203,10 @@ require("lazy").setup({
     {
         "saecki/crates.nvim",
         event = "BufRead Cargo.toml",
-        dependencies = { "hrsh7th/nvim-cmp" },
         config = function()
-            local crates = require("crates")
-            crates.setup({
-                completion = {
-                    cmp = { enabled = true },
-                },
+            -- in-process lsp: completion, hover and actions in Cargo.toml for any completion engine
+            require("crates").setup({
+                lsp = { enabled = true, completion = true, actions = true, hover = true },
             })
         end,
     },

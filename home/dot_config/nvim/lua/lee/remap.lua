@@ -1,5 +1,3 @@
-vim.g.mapleader = " "
-
 -- save
 vim.keymap.set({ 'n', 'v' }, '<leader>fs',
     function()
@@ -167,14 +165,7 @@ vim.keymap.set('n', '<leader>so',
 --     end,
 --     { desc = 'eval scratch buffer' })
 
--- LSP
--- info
-vim.keymap.set('n', 'K',
-    function()
-        vim.lsp.buf.hover()
-    end,
-    { desc = 'info' })
-
+-- LSP (built in since nvim 0.11: K hover, grn rename, grr references, gra code action, gri implementation)
 -- variable rename
 vim.keymap.set('n', '<leader>vr',
     function()
@@ -188,12 +179,6 @@ vim.keymap.set('n', 'gd',
         vim.lsp.buf.definition()
     end,
     { desc = 'go to definition' })
-
-vim.keymap.set('n', 'gr',
-    function()
-        vim.lsp.buf.references()
-    end,
-    { desc = 'get references' })
 
 -- find references
 vim.keymap.set('n', '<leader>fr',
@@ -237,10 +222,12 @@ vim.keymap.set('i', '<C-H>', '<C-W>') -- windows <C-H>
 vim.keymap.set('i', '<C-Del>', 'X<Esc>lbce')
 
 -- alt + up/down swap lines
-vim.keymap.set({ 'n', 'v' }, '<M-up>', 'ddkkp')
-vim.keymap.set({ 'n', 'v' }, '<M-down>', 'ddp')
-vim.keymap.set('i', '<M-up>', '<esc>ddkkpi')
-vim.keymap.set('i', '<M-down>', '<esc>ddpi')
+vim.keymap.set('n', '<M-up>', '<cmd>m .-2<CR>==')
+vim.keymap.set('n', '<M-down>', '<cmd>m .+1<CR>==')
+vim.keymap.set('v', '<M-up>', ":m '<-2<CR>gv=gv")
+vim.keymap.set('v', '<M-down>', ":m '>+1<CR>gv=gv")
+vim.keymap.set('i', '<M-up>', '<esc><cmd>m .-2<CR>==gi')
+vim.keymap.set('i', '<M-down>', '<esc><cmd>m .+1<CR>==gi')
 
 -- alt + left/right swap chars
 vim.keymap.set({ 'n', 'v' }, '<M-left>', 'Xph')

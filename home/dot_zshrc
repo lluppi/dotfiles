@@ -14,6 +14,53 @@ case $OSTYPE in
 	linux*) source "$HOME/.config/zsh/linux.zsh" ;;
 esac
 
+# history: big, shared between open shells, no duplicates, ` cmd` (leading space) stays out
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=100000
+SAVEHIST=100000
+setopt share_history extended_history hist_ignore_all_dups hist_ignore_space hist_reduce_blanks
+
+setopt auto_cd interactive_comments
+
+# completion: full security check once a day, cached dump otherwise
+autoload -Uz compinit
+() {
+	setopt local_options extended_glob
+	if [[ -n $HOME/.zcompdump(#qN.mh+24) || ! -e $HOME/.zcompdump ]]; then
+		compinit
+	else
+		compinit -C
+	fi
+}
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+
+# keys: emacs mode, up/down search history by what's typed, ctrl+arrows jump words
+bindkey -e
+autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+bindkey '^[[A' up-line-or-beginning-search
+bindkey '^[OA' up-line-or-beginning-search
+bindkey '^[[B' down-line-or-beginning-search
+bindkey '^[OB' down-line-or-beginning-search
+bindkey '^[[1;5D' backward-word
+bindkey '^[[1;5C' forward-word
+bindkey '^[[3~' delete-char
+
+# ctrl+o copies the current command line to the clipboard
+copybuffer() {
+	if (( $+commands[pbcopy] )); then
+		print -rn -- "$BUFFER" | pbcopy
+	elif (( $+commands[wl-copy] )); then
+		print -rn -- "$BUFFER" | wl-copy
+	fi
+	zle -M "copied to clipboard"
+}
+zle -N copybuffer
+bindkey '^O' copybuffer
+
 export EDITOR="nvim"
 
 # aliases
@@ -88,4 +135,21 @@ ssh() {
 # bun completions
 [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
+# node versions: fnm switches on cd when a dir has .nvmrc / .node-version
+(( $+commands[fnm] )) && eval "$(fnm env --use-on-cd --shell zsh)"
+
+# fzf: ctrl+r history, ctrl+t files, alt+c cd
+(( $+commands[fzf] )) && source <(fzf --zsh)
+
 (( $+commands[starship] )) && eval "$(starship init zsh)"
+
+# plugins last: syntax highlighting has to wrap every widget defined above it
+for plugin in zsh-autosuggestions zsh-syntax-highlighting; do
+	for dir in ${HOMEBREW_PREFIX:+$HOMEBREW_PREFIX/share} /usr/share/zsh/plugins; do
+		if [[ -r $dir/$plugin/$plugin.zsh ]]; then
+			source "$dir/$plugin/$plugin.zsh"
+			break
+		fi
+	done
+done
+unset plugin dir

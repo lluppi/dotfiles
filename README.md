@@ -17,9 +17,10 @@
 ## install
 
 ```sh
-# arch: pacman -S chezmoi    macos: brew install chezmoi
+# arch:  pacman -S chezmoi fzf fnm starship eza bat zsh-autosuggestions zsh-syntax-highlighting pkgfile
+# macos: brew install chezmoi fzf fnm starship eza bat zsh-autosuggestions zsh-syntax-highlighting
 git clone https://github.com/lluppi/dotfiles.git ~/clone/dotfiles
-chezmoi init --source ~/clone/dotfiles   # writes ~/.config/chezmoi/chezmoi.toml pointing at the checkout
+chezmoi init --source ~/clone/dotfiles   # asks git name/email/signing key once, writes ~/.config/chezmoi/chezmoi.toml
 chezmoi diff                             # see what would change
 chezmoi apply
 ```
@@ -30,6 +31,7 @@ home/
 ├── .chezmoiignore              # per-os gating
 ├── .chezmoi.toml.tmpl          # chezmoi config, keeps sourceDir on this checkout
 ├── dot_zshrc                   # shared shell config
+├── dot_gitconfig.tmpl          # git, identity from chezmoi.toml (not in this repo)
 ├── dot_config/
 │   ├── zsh/                    # darwin.zsh / linux.zsh
 │   ├── ghostty/config.tmpl     # terminal, per-os bits templated

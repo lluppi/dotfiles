@@ -1,2 +1,11 @@
-# rendered into ~/.config/chezmoi/chezmoi.toml by `chezmoi init`; keeps chezmoi pointed at this checkout
+{{- /* rendered into ~/.config/chezmoi/chezmoi.toml by `chezmoi init`; asks once per machine, answers stay out of git */ -}}
+{{- $name := promptStringOnce . "git.name" "git name" -}}
+{{- $email := promptStringOnce . "git.email" "git email" -}}
+{{- $signingkey := promptStringOnce . "git.signingkey" "gpg signing key (blank for unsigned)" -}}
+# keeps chezmoi pointed at this checkout
 sourceDir = {{ .chezmoi.workingTree | quote }}
+
+[data.git]
+name = {{ $name | quote }}
+email = {{ $email | quote }}
+signingkey = {{ $signingkey | quote }}

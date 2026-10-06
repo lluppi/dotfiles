@@ -11,10 +11,6 @@ fi
 # Rust toolchain
 path=("/opt/homebrew/opt/rustup/bin" $path)
 
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-
 start-ng() {
 	local location="${1:-au}"
 	local environment="${2:-test}"
@@ -44,14 +40,6 @@ start-ng() {
 
 	npm run task client leap "$location" "$environment" "$branch"
 }
-
-# plugins
-if [[ -n ${HOMEBREW_PREFIX:-} ]]; then
-	[[ -r "$HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] &&
-		source "$HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
-	[[ -r "$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] &&
-		source "$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
-fi
 
 # Let terminal pinentry follow the active TTY for signed commits.
 if [[ -t 0 ]] && (( $+commands[gpg-connect-agent] )); then

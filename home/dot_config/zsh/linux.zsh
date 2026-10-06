@@ -1,20 +1,7 @@
 # sourced by ~/.zshrc on linux (arch)
 
-export ZSH="$HOME/.config/oh-my-zsh"
-export DISABLE_AUTO_UPDATE="true"
-export DISABLE_UPDATE_PROMPT="true"
-
-plugins=(
-	git
-    copybuffer
-    command-not-found
-    zsh-interactive-cd
-)
-
-source /usr/share/doc/pkgfile/command-not-found.zsh
-source $ZSH/oh-my-zsh.sh
-source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
-source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+# "did you mean to install X" for unknown commands (pacman -S pkgfile && pkgfile --update)
+[[ -r /usr/share/doc/pkgfile/command-not-found.zsh ]] && source /usr/share/doc/pkgfile/command-not-found.zsh
 
 path=(
 	"$HOME/.config/ncmpcpp/ncmpcpp-ueberzug"

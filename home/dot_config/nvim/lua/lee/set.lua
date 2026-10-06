@@ -7,7 +7,7 @@ vim.g.loaded_perl_provider = 0
 vim.g.loaded_python3_provider = 0
 vim.g.loaded_ruby_provider = 0
 
-vim.cmd('language en_AU.UTF-8')
+pcall(vim.cmd, 'language en_AU.UTF-8') -- missing locale shouldn't break startup
 vim.o.cmdheight = 0
 
 vim.opt.number = true
@@ -35,7 +35,7 @@ vim.opt.scrolloff = 8
 vim.opt.signcolumn = "yes"
 vim.opt.isfname:append("@-@")
 
-vim.opt.updatetime = 50
+vim.opt.updatetime = 250
 
 vim.opt.colorcolumn = "80"
 

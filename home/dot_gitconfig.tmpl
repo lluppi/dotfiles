@@ -1,0 +1,38 @@
+# managed by chezmoi: edit ~/clone/dotfiles/home/dot_gitconfig.tmpl, identity lives in ~/.config/chezmoi/chezmoi.toml
+[user]
+	name = {{ .git.name }}
+	email = {{ .git.email }}
+{{- if .git.signingkey }}
+	signingkey = {{ .git.signingkey }}
+[commit]
+	gpgsign = true
+{{- end }}
+{{- with lookPath "gpg" }}
+[gpg]
+	program = {{ . }}
+{{- end }}
+{{- with lookPath "gh" }}
+[credential "https://github.com"]
+	helper = !{{ . }} auth git-credential
+[credential "https://gist.github.com"]
+	helper = !{{ . }} auth git-credential
+{{- end }}
+[init]
+	defaultBranch = main
+[core]
+	editor = nvim
+[pull]
+	# rebase local commits onto the remote instead of a merge bubble; local merge commits are kept
+	rebase = merges
+[rebase]
+	autoStash = true
+[push]
+	autoSetupRemote = true
+[fetch]
+	prune = true
+[rerere]
+	enabled = true
+[merge]
+	conflictStyle = zdiff3
+[diff]
+	algorithm = histogram
