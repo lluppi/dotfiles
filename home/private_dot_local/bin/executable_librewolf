@@ -1,0 +1,31 @@
+#!/bin/sh
+# h264 workaround for librewolf 153 on arch: firefox's FFmpegRuntimeLinker only
+# knows libavcodec.so.53 ... .62, but arch now ships ffmpeg 9 (libavcodec.so.63).
+# without h264 all mp4/x-twitter video dies while vp9/av1 (youtube) still works.
+# to undo: delete this file, ~/.local/share/applications/librewolf.desktop and
+# ~/.local/lib/librewolf-ffmpeg8
+FFDIR="$HOME/.local/lib/librewolf-ffmpeg8"
+if [ -f "$FFDIR/libavcodec.so.62" ]; then
+  LD_LIBRARY_PATH="$FFDIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+  export LD_LIBRARY_PATH
+fi
+
+# libva-nvidia-driver (NVDEC-backed VA-API) so video decode happens on the GPU
+# instead of dav1d chewing a core per stream.
+#   LIBVA_DRIVER_NAME     libva 2.20+ no longer autodetects, must be named
+#   MOZ_DISABLE_RDD_SANDBOX  upstream requirement: firefox's RDD sandbox has no
+#                          /dev/nvidia0|ctl|uvm rule, so the driver can't open
+#                          the device while sandboxed (see nvidia-vaapi-driver README).
+#   LIBVA_MESSAGING_LEVEL  1 = quiet; firefox re-inits libva per page/process.
+# the matching firefox prefs live in the profile's user.js
+# (media.ffmpeg.vaapi.enabled, media.hardware-video-decoding.force-enabled,
+#  media.rdd-ffmpeg.enabled).
+# to undo: delete this block and those three prefs.
+if [ -f /usr/lib/dri/nvidia_drv_video.so ]; then
+  LIBVA_DRIVER_NAME=nvidia
+  LIBVA_MESSAGING_LEVEL=1
+  MOZ_DISABLE_RDD_SANDBOX=1
+  export LIBVA_DRIVER_NAME LIBVA_MESSAGING_LEVEL MOZ_DISABLE_RDD_SANDBOX
+fi
+
+exec /usr/bin/librewolf "$@"

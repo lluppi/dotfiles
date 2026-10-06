@@ -39,7 +39,7 @@ home/
 │   ├── lazygit/                # lazygit
 │   ├── executable_starship.toml
 │   ├── hypr/ quickshell/ fuzzel/ gtk-3.0/ gtk-4.0/ librewolf/   # linux only
-├── dot_local/                  # linux only: bin/ scripts, gtk theme
+├── private_dot_local/          # linux only: bin/ scripts, gtk theme
 ├── dot_aerospace.toml          # macos only
 ├── dot_hammerspoon/            # macos only
 └── private_Library/            # macos only: lazygit symlink

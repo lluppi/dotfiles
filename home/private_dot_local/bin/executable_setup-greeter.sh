@@ -1,10 +1,9 @@
 #!/bin/bash
 # Sets up greetd + quickshell greeter + lock screen on a fresh Arch install.
-# Run as your normal user (not root). Assumes dotfiles are at ~/dotfiles.
+# Run as your normal user (not root). Assumes `chezmoi apply` has already run.
 
 set -e
 
-DOTFILES="$HOME/dotfiles"
 QS_CONFIG="$HOME/.config/quickshell"
 
 # ---- sanity checks ----
@@ -15,7 +14,7 @@ if [[ "$EUID" -eq 0 ]]; then
 fi
 
 if [[ ! -d "$QS_CONFIG" ]]; then
-    echo "quickshell config not found at $QS_CONFIG — clone your dotfiles first" >&2
+    echo "quickshell config not found at $QS_CONFIG — run chezmoi apply first" >&2
     exit 1
 fi
 
