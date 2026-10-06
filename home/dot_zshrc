@@ -1,0 +1,91 @@
+# Keep user tool directories first and remove duplicates inherited from nested shells.
+typeset -U path PATH
+path=(
+	"$HOME/.local/bin"
+	"$HOME/.cargo/bin"
+	"$HOME/.bun/bin"
+	$path
+)
+export PATH
+
+# os-specific setup (paths, plugins, env): ~/.config/zsh/darwin.zsh or linux.zsh
+case $OSTYPE in
+	darwin*) source "$HOME/.config/zsh/darwin.zsh" ;;
+	linux*) source "$HOME/.config/zsh/linux.zsh" ;;
+esac
+
+export EDITOR="nvim"
+
+# aliases
+alias vim="nvim"
+alias v="nvim"
+alias lg="lazygit"
+alias cat="bat"
+alias ls="eza --long --no-user --git --icons --ignore-glob=thunderbird"
+alias cls="clear && eza --long --no-user --git --icons --ignore-glob=thunderbird"
+alias cdc="cd ~/clone"
+alias brd="bun run dev"
+
+# Run independent pi agents in persistent tmux sessions.
+pnew() {
+	local session
+
+	if (( $# == 0 )); then
+		local index=0
+		while tmux has-session -t "=$index" 2>/dev/null; do
+			(( index++ ))
+		done
+		session=$index
+	else
+		session=$1
+		shift
+	fi
+
+	local pi_command
+	printf -v pi_command '%q ' "$HOME/.bun/bin/pi" "$@"
+	tmux new-session -s "$session" "$pi_command"
+}
+
+pgo() {
+	if (( $# > 1 )); then
+		print -u2 "usage: pgo [session]"
+		return 2
+	fi
+
+	local session=${1:-0}
+	tmux attach-session -t "=$session"
+}
+
+pls() {
+	tmux list-sessions
+}
+
+kp() {
+	if (( $# != 1 )) || [[ $1 != <-> ]]; then
+		print -u2 "usage: kp <port>"
+		return 2
+	fi
+
+	local -a pids
+	# only target the server listening on the port, not connected clients such as browsers.
+	pids=($(lsof -nP -tiTCP:"$1" -sTCP:LISTEN))
+	if (( ${#pids} == 0 )); then
+		print -u2 "kp: no process found on port $1"
+		return 1
+	fi
+
+	kill -KILL -- $pids
+}
+
+ssh() {
+	if [[ $TERM == xterm-ghostty ]]; then
+		TERM=xterm-256color command ssh "$@"
+	else
+		command ssh "$@"
+	fi
+}
+
+# bun completions
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+
+(( $+commands[starship] )) && eval "$(starship init zsh)"

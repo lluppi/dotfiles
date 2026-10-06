@@ -1,0 +1,217 @@
+# AeroSpace port of .config/hypr/hyprland.conf
+#
+# macOS modifier remapping is applied before AeroSpace sees these bindings:
+# physical Option is cmd (SUPER), and physical Command is alt.
+
+config-version = 2
+
+# Keep topology reconciliation as a safety net for stale workspaces restored by
+# macOS; persistent secondary workspaces below prevent unassigned names such as
+# workspace 9 from being selected during normal startup.
+after-startup-command = [
+  'exec-and-forget "$HOME/.local/bin/aerospace-workspace-topology.sh"',
+]
+exec-on-workspace-change = []
+start-at-login = true
+auto-reload-config = true
+
+enable-normalization-flatten-containers = true
+enable-normalization-opposite-orientation-for-nested-containers = true
+
+# Hammerspoon and aerospace-master-layout.sh reshape tiles by monitor:
+# left-master on the built-in display and centered-master on LG ultrawides.
+# Accordion remains available through cmd-d as a temporary alternative.
+accordion-padding = 30
+default-root-container-layout = 'tiles'
+default-root-container-orientation = 'auto'
+
+# Hammerspoon applies focus-follow only to tiled windows. AeroSpace's native
+# version can raise a fully obscured floating utility when its frame is hovered.
+focus-follows-mouse.enabled = false
+# Keep incidental focus changes (for example after closing a window) from
+# teleporting the pointer. Explicit monitor navigation moves it below.
+# A display change that strands windows on a workspace with no display must be
+# reconciled even if Hammerspoon's screen watcher never fires. AeroSpace raises
+# this when the focused monitor disappears.
+on-focused-monitor-changed = [
+  'exec-and-forget "$HOME/.local/bin/aerospace-workspace-topology.sh"',
+]
+
+# Hidden applications do not fit naturally into a tiling workflow.
+automatically-unhide-macos-hidden-apps = true
+
+# Keep every configured workspace alive so AeroSpace always has an assigned
+# workspace ready for each monitor during startup and display reconnection.
+persistent-workspaces = ['1', '2', '3', '4', '5', '6', '7', '8']
+on-mode-changed = []
+
+key-mapping.preset = 'qwerty'
+
+# Hyprland gaps_in = 5 and gaps_out = 10.
+gaps.inner.horizontal = 5
+gaps.inner.vertical = 5
+gaps.outer.left = 6
+gaps.outer.bottom = 6
+gaps.outer.top = 2
+gaps.outer.right = 6
+
+[workspace-to-monitor-force-assignment]
+1 = 'main'
+2 = 'main'
+3 = 'main'
+4 = 'main'
+5 = 'secondary'
+6 = 'secondary'
+7 = 'secondary'
+8 = 'secondary'
+
+[mode.main.binding]
+# Applications
+cmd-alt-enter = 'exec-and-forget /usr/bin/open -na /Applications/Ghostty.app'
+# Requested macOS convenience; Hyprland also had cmd-alt-enter above.
+cmd-alt-b = 'exec-and-forget /usr/bin/open -a /Applications/Firefox.app'
+cmd-r = 'exec-and-forget /usr/bin/open -a /Applications/Sol.app'
+cmd-e = 'exec-and-forget /usr/bin/open -na /Applications/Ghostty.app --args -e /opt/homebrew/bin/nvim'
+cmd-c = 'exec-and-forget "$HOME/.local/bin/aerospace-open-floating-app.sh" com.apple.DigitalColorMeter'
+
+# Session/window lifecycle
+cmd-l = 'exec-and-forget /opt/homebrew/bin/hs -c "hs.caffeinate.lockScreen()"'
+cmd-shift-l = 'exec-and-forget /opt/homebrew/bin/hs -c "lidAwakeLock.lock()"'
+# Lid-awake lock. `pmset displaysleepnow` only kills the backlight and takes no
+# sleep assertion, so closing the lid still forced clamshell sleep, dropped the
+# Wi-Fi radio (AppleWLANInterfaceSTA SetState to 0) and killed long-running
+# terminal sessions' sockets. Clamshell sleep is only overridable by
+# `pmset disablesleep 1`, which lidAwakeLock.lock() sets before locking and
+# restores on unlock.
+cmd-alt-l = 'exec-and-forget /opt/homebrew/bin/hs -c "lidAwakeLock.lock()"'
+cmd-alt-q = "exec-and-forget /usr/bin/osascript -e 'tell application \"AeroSpace\" to quit'"
+# Close only the focused window; quit the app when it has no other windows.
+cmd-alt-c = 'close --quit-if-last-window'
+
+# Window focus and promotion. The helper records the focused window as the
+# workspace master, then rebuilds the monitor-appropriate tree around it.
+cmd-j = 'focus --wrap-around dfs-next'
+cmd-k = 'focus --wrap-around dfs-prev'
+# Include visible unmanaged system dialogs (such as permission prompts), which
+# are shown on every workspace but do not belong to AeroSpace's layout tree.
+alt-tab = 'exec-and-forget /opt/homebrew/bin/hs -c "windowCycle.cycle(1)"'
+alt-shift-tab = 'exec-and-forget /opt/homebrew/bin/hs -c "windowCycle.cycle(-1)"'
+cmd-enter = 'exec-and-forget "$HOME/.local/bin/aerospace-promote-window.sh"'
+cmd-tab = 'exec-and-forget "$HOME/.local/bin/aerospace-promote-window.sh"'
+
+# Layouts and sizing. cmd-i restores the monitor's default master proportions.
+cmd-i = 'exec-and-forget "$HOME/.local/bin/aerospace-master-layout.sh" --focused-workspace'
+cmd-d = 'layout --root tiles accordion'
+cmd-t = 'exec-and-forget /opt/homebrew/bin/hs -c "topmost.toggle()"'
+# The helper rebuilds the workspace in the same batch as the float toggle, so
+# remaining/rejoining tiles land directly in the master layout.
+cmd-f = 'exec-and-forget "$HOME/.local/bin/aerospace-master-layout.sh" --toggle-floating'
+cmd-alt-space = 'exec-and-forget "$HOME/.local/bin/aerospace-master-layout.sh" --toggle-floating'
+cmd-m = 'fullscreen --no-outer-gaps'
+cmd-alt-h = 'resize height +40'
+cmd-comma = 'resize smart -40'
+cmd-period = 'resize smart +40'
+
+# Cycle 1-4 on the main display and 5-8 on the secondary display.
+# Moving with arrows intentionally does not follow the window.
+cmd-left = 'exec-and-forget "$HOME/.local/bin/aerospace-cycle-workspace.sh" prev'
+cmd-right = 'exec-and-forget "$HOME/.local/bin/aerospace-cycle-workspace.sh" next'
+# The helper folds the move and the destination master-layout rebuild into one
+# double-buffered batch, so the window lands directly in its final slot.
+cmd-alt-left = 'exec-and-forget "$HOME/.local/bin/aerospace-master-layout.sh" --move-focused prev'
+cmd-alt-right = 'exec-and-forget "$HOME/.local/bin/aerospace-master-layout.sh" --move-focused next'
+
+# Monitor navigation. Pointer movement belongs only to this explicit action,
+# not every incidental monitor-focus change.
+cmd-o = 'focus-monitor --wrap-around next; move-mouse monitor-lazy-center'
+cmd-alt-o = 'exec-and-forget "$HOME/.local/bin/aerospace-master-layout.sh" --move-focused monitor'
+
+# Super+S opens Hex God Screenshot Master: click copies hex; drag copies an image.
+# Points at the dev launcher, which refreshes the signed bundle from zig-out
+# (building only when src/ changed) so it is always the current build.
+cmd-s = 'exec-and-forget "$HOME/.local/bin/hgsm-dev"'
+cmd-alt-s = 'exec-and-forget "$HOME/.local/bin/aerospace-screenshot-upload.sh" window'
+
+# Direct workspace access. Hyprland's non-silent move follows the window.
+cmd-1 = 'workspace 1'
+cmd-2 = 'workspace 2'
+cmd-3 = 'workspace 3'
+cmd-4 = 'workspace 4'
+
+cmd-shift-1 = 'move-node-to-workspace --focus-follows-window 1'
+cmd-shift-2 = 'move-node-to-workspace --focus-follows-window 2'
+cmd-shift-3 = 'move-node-to-workspace --focus-follows-window 3'
+cmd-shift-4 = 'move-node-to-workspace --focus-follows-window 4'
+
+# Non-resizable utility windows should stay out of the tiling tree. Their
+# launcher explicitly focuses them because floating does not mean always-on-top.
+[[on-window-detected]]
+if.app-id = 'com.apple.DigitalColorMeter'
+run = 'layout floating'
+check-further-callbacks = true
+
+# Ghostty uses native macOS tabs, which the accessibility API exposes as
+# separate windows. Reasserting tiling prevents each new tab from shrinking
+# the existing workspace layout.
+[[on-window-detected]]
+if.app-id = 'com.mitchellh.ghostty'
+run = 'layout tiling'
+check-further-callbacks = true
+
+[[on-window-detected]]
+if.app-id = 'us.zoom.xos'
+run = 'layout floating'
+check-further-callbacks = true
+
+[[on-window-detected]]
+if.app-id = 'com.microsoft.teams2'
+run = 'layout floating'
+check-further-callbacks = true
+
+# LG fast paths. The 'run' commands execute synchronously inside AeroSpace's
+# window-detection transaction, so the first tiled render is already correct.
+# 'focus --dfs-index N' doubles as a tiling-window-count probe in 'if':
+# it succeeds only when the workspace has at least N+1 tiled windows, and the
+# callbacks are ordered so each one implies the previous probe failed.
+
+# 5+ windows: stop here so the exactly-4 probe below cannot misfire. The
+# Hammerspoon window-detected subscription performs the async repair.
+[[on-window-detected]]
+if = 'test %{workspace-is-focused} = true && test %{monitor-name} ~= ultragear && test %{window-layout} = h_tiles && focus --dfs-index 4'
+run = 'true'
+
+# Exactly 4: the new window becomes the left column and the master re-centres.
+# The trailing resize renders the new window at its final ~25% column width
+# immediately (-430 = 1272px target on the 5120px LG after normalization);
+# the async pass only settles the master/stack split afterwards.
+[[on-window-detected]]
+if = 'test %{workspace-is-focused} = true && test %{monitor-name} ~= ultragear && test %{window-layout} = h_tiles && focus --dfs-index 3'
+run = 'swap left; balance-sizes; resize width -430; focus --dfs-index 0'
+
+# Exactly 3: the new window joins the stack column instead of becoming a third column.
+[[on-window-detected]]
+if = 'test %{workspace-is-focused} = true && test %{monitor-name} ~= ultragear && test %{window-layout} = h_tiles && focus --dfs-index 2'
+run = 'join-with right && focus --dfs-index 1 || (join-with left && focus --dfs-index 2)'
+
+# Same fourth-window transition, but AeroSpace inserted the new window INTO
+# the stack (focus was on a stack member). Pop it out to a root column first,
+# then apply the identical left-column promotion.
+[[on-window-detected]]
+if = 'test %{workspace-is-focused} = true && test %{monitor-name} ~= ultragear && test %{window-layout} = v_tiles && focus --dfs-index 4'
+run = 'true'
+
+[[on-window-detected]]
+if = 'test %{workspace-is-focused} = true && test %{monitor-name} ~= ultragear && test %{window-layout} = v_tiles && focus --dfs-index 3'
+run = 'move left; swap left; balance-sizes; resize width -430; focus --dfs-index 0'
+
+# Every non-ultrawide monitor (laptop, office Dells, ...): master keeps the
+# left column and everything else stacks on the right.
+# 4+ windows: a new root column merges into the existing right stack.
+[[on-window-detected]]
+if = 'test %{workspace-is-focused} = true && test-not %{monitor-name} ~= ultragear && test %{window-layout} = h_tiles && focus --dfs-index 3'
+run = 'move right && focus --dfs-index 1'
+
+# Exactly 3: the new window and the right-hand window form the stack.
+[[on-window-detected]]
+if = 'test %{workspace-is-focused} = true && test-not %{monitor-name} ~= ultragear && test %{window-layout} = h_tiles && focus --dfs-index 2'
+run = 'join-with right && focus --dfs-index 1 || (join-with left && focus --dfs-index 2)'

@@ -1,0 +1,19 @@
+customCommands:
+  # select a branch in the branches panel, ctrl+s, pick the base: pushes the branch,
+  # opens the pr (or reuses the open one) and arms auto-merge, so it lands once ci is green
+  - key: "<c-s>"
+    context: "localBranches"
+    description: "ship branch: pr + auto-merge"
+    prompts:
+      - type: "menu"
+        key: "Base"
+        title: "pr {{.SelectedLocalBranch.Name}} into"
+        options:
+          - value: "test"
+          - value: "master"
+    command: >-
+      git push origin {{.SelectedLocalBranch.Name}} &&
+      (gh pr create --base {{.Form.Base}} --head {{.SelectedLocalBranch.Name}} --fill ||
+      echo "pr already open, re-arming auto-merge") &&
+      gh pr merge $(gh pr list --base {{.Form.Base}} --head {{.SelectedLocalBranch.Name}} --json number --jq '.[0].number') --auto --merge
+    output: terminal

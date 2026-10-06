@@ -1,0 +1,38 @@
+(
+        {
+        HIDKeyboardModifierMappingDst = 30064771303;
+        HIDKeyboardModifierMappingSrc = 30064771302;
+    },
+        {
+        HIDKeyboardModifierMappingDst = 30064771300;
+        HIDKeyboardModifierMappingSrc = 1095216660483;
+    },
+        {
+        HIDKeyboardModifierMappingDst = 1095216660483;
+        HIDKeyboardModifierMappingSrc = 30064771300;
+    },
+        {
+        HIDKeyboardModifierMappingDst = 30064771302;
+        HIDKeyboardModifierMappingSrc = 30064771303;
+    },
+        {
+        HIDKeyboardModifierMappingDst = 30064771300;
+        HIDKeyboardModifierMappingSrc = 30064771129;
+    },
+        {
+        HIDKeyboardModifierMappingDst = 30064771298;
+        HIDKeyboardModifierMappingSrc = 30064771299;
+    },
+        {
+        HIDKeyboardModifierMappingDst = 30064771299;
+        HIDKeyboardModifierMappingSrc = 30064771298;
+    },
+        {
+        HIDKeyboardModifierMappingDst = 1095216660483;
+        HIDKeyboardModifierMappingSrc = 30064771296;
+    },
+        {
+        HIDKeyboardModifierMappingDst = 30064771296;
+        HIDKeyboardModifierMappingSrc = 280379760050179;
+    }
+)

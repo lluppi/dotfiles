@@ -1,0 +1,21 @@
+# paths are targets relative to $HOME; anything listed here is not managed on that os
+
+{{ if ne .chezmoi.os "linux" }}
+.config/fuzzel
+.config/gtk-3.0
+.config/gtk-4.0
+.config/hypr
+.config/librewolf
+.config/quickshell
+.config/ghostty/theme.css
+.config/zsh/linux.zsh
+.local/bin
+.local/share/themes
+{{ end }}
+
+{{ if ne .chezmoi.os "darwin" }}
+.aerospace.toml
+.hammerspoon
+.config/zsh/darwin.zsh
+Library
+{{ end }}
