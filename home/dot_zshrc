@@ -114,9 +114,7 @@ music() {
 		tmux set -w -t $s pane-border-style fg=#dcd7ba
 		tmux set -w -t $s pane-active-border-style fg=#dcd7ba
 		strip=$(tmux split-window -v -l 9 -P -F '#{pane_id}' -t "$main" 'drome-lord cover')
-		if [[ $OSTYPE == linux* ]]; then
-			tmux split-window -h -l 35% -t "$strip" "ncmpcpp -c $HOME/.config/ncmpcpp/visualizer.config"
-		fi
+		tmux split-window -h -l 35% -t "$strip" "ncmpcpp -c $HOME/.config/ncmpcpp/visualizer.config"
 		tmux select-pane -t "$main"
 	fi
 	if [[ -n $TMUX ]]; then

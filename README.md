@@ -32,6 +32,7 @@ chezmoi apply                            # also clones fzf-tab + yazi flavor
 atuin import zsh                         # pull existing zsh history into atuin
 # music: build ~/clone/drome-lord with zig 0.17 (zig build -Doptimize=ReleaseSafe --prefix ~/.local), put the navidrome
 #        login in ~/.config/drome-lord/credentials (username = / password =, chmod 600), chezmoi apply starts the service
+#        macos: add -Dcodesign="<identity>" so the visualizer's system audio recording grant survives rebuilds
 ```
 ## structure
 

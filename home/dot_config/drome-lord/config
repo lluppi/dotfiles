@@ -6,5 +6,5 @@ bind = 127.0.0.1
 port = 6600
 mpv_args = --gapless-audio=weak --replaygain=album
 scrobble = true
-# feed mpv's audio (captured from pipewire) to ncmpcpp's visualizer; ignored on macos
+# feed mpv's audio to ncmpcpp's visualizer (pipewire on linux, a core audio process tap on macos)
 visualizer = localhost:5555

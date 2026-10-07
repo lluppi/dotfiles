@@ -10,7 +10,6 @@
 .config/systemd
 .config/ghostty/theme.css
 .config/zsh/linux.zsh
-.config/ncmpcpp/visualizer.config
 .local/bin
 .local/share/themes
 {{ end }}
