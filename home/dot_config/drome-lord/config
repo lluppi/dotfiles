@@ -1,0 +1,10 @@
+# drome-lord: mpd server over navidrome for ncmpcpp (~/clone/drome-lord)
+# login lives in ~/.config/drome-lord/credentials (0600, username = / password =), never in this repo
+# tried in order at startup, first that answers wins: lan at home, vps tunnel everywhere else
+urls = http://music.local:4533, https://music.imre.al
+bind = 127.0.0.1
+port = 6600
+mpv_args = --gapless-audio=weak --replaygain=album
+scrobble = true
+# feed mpv's audio (captured from pipewire) to ncmpcpp's visualizer; ignored on macos
+visualizer = localhost:5555

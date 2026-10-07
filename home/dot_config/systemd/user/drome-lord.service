@@ -1,0 +1,11 @@
+[Unit]
+Description=drome-lord: mpd server over navidrome for ncmpcpp
+After=network-online.target
+
+[Service]
+ExecStart=%h/.local/bin/drome-lord
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

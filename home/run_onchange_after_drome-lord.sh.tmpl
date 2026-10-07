@@ -1,0 +1,19 @@
+#!/bin/sh
+# (re)start the drome-lord service when its unit changes; skipped until the binary is built
+# into ~/.local/bin (cd ~/clone/drome-lord && zig build -Doptimize=ReleaseSafe --prefix ~/.local)
+{{- if eq .chezmoi.os "linux" }}
+# unit hash: {{ include "dot_config/systemd/user/drome-lord.service" | sha256sum }}
+{{- else if eq .chezmoi.os "darwin" }}
+# plist hash: {{ include "private_Library/LaunchAgents/local.drome-lord.plist.tmpl" | sha256sum }}
+{{- end }}
+set -eu
+[ -x "$HOME/.local/bin/drome-lord" ] || { echo "drome-lord: not built yet, skipping service" >&2; exit 0; }
+{{- if eq .chezmoi.os "linux" }}
+systemctl --user daemon-reload
+systemctl --user enable drome-lord.service >/dev/null 2>&1
+systemctl --user restart drome-lord.service
+{{- else if eq .chezmoi.os "darwin" }}
+plist="$HOME/Library/LaunchAgents/local.drome-lord.plist"
+launchctl bootout "gui/$(id -u)" "$plist" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" "$plist"
+{{- end }}

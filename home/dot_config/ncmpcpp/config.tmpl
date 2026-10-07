@@ -1,0 +1,77 @@
+# ncmpcpp -> drome-lord (mpd protocol over navidrome), see ~/clone/drome-lord
+# `music` (zshrc) runs this in tmux above the now-playing strip (drome-lord cover),
+# plus visualizer.config next to the strip on linux. only that one may set visualizer_data_source:
+# whichever ncmpcpp starts first binds the udp port, so this one must not.
+# header, statusbar and progress bar are off: the strip shows what's playing and the progress.
+# colour numbers are ghostty palette index + 1 (kanagawa wave):
+#   5 crystalBlue  6 oniViolet  9 fujiGray  11 springGreen  12 carpYellow  14 springViolet  16 fujiWhite
+
+mpd_host = 127.0.0.1
+mpd_port = 6600
+mpd_connection_timeout = 5
+
+# ui: queue locked on the left, browsing (2 folders, 3 search, 4 library) on the right
+startup_screen = playlist
+startup_slave_screen = media_library
+startup_slave_screen_focus = yes
+locked_screen_width_part = 45
+ask_for_locked_screen_width_part = no
+user_interface = classic
+header_visibility = no
+statusbar_visibility = no
+titles_visibility = no
+playlist_display_mode = classic
+browser_display_mode = columns
+search_engine_display_mode = columns
+playlist_editor_display_mode = columns
+jump_to_now_playing_song_at_start = yes
+autocenter_mode = yes
+cyclic_scrolling = yes
+mouse_support = yes
+lines_scrolled = 2
+message_delay_time = 2
+connected_message_on_startup = no
+playlist_disable_highlight_delay = 0
+ask_before_clearing_playlists = no
+ignore_leading_the = yes
+tags_separator = " | "
+
+# album artist keeps "feat." credits from flooding the artist column
+media_library_primary_tag = album_artist
+media_library_hide_album_dates = no
+media_library_albums_split_by_date = yes
+
+# drome-lord cover draws the one progress bar
+progressbar_look = "   "
+
+# formats
+# queue rows match the strip below: artist crystalBlue, title fujiWhite, extras fujiGray.
+# the browsing side (columns, library picks) uses oniViolet, the theme's purple
+song_list_format = " {$(5)%a$(end) $(9)·$(end) }{%t}|{%f} $R$(9){%l}$(end) "
+song_columns_list_format = "(4f)[9]{n} (45)[]{t|f:Title} (30)[6]{a} (7f)[9]{lr}"
+song_library_format = "{$(9)%n$(end)  }{%t}|{%f}"
+song_window_title_format = "{%t} -- {%a}"
+# now playing: bold carpYellow, like the state icon and progress bar
+now_playing_prefix = "$b$(12)"
+now_playing_suffix = "$(end)$/b"
+# cursor: a soft sumiInk bar (xterm 237, ncmpcpp numbers are index + 1) instead of reverse video,
+# which turned every coloured field into its own block. other columns just tint the pick purple
+current_item_prefix = "$(16_238)"
+current_item_suffix = "$(end)"
+current_item_inactive_column_prefix = "$b$(6)"
+current_item_inactive_column_suffix = "$(end)$/b"
+# marked with space: springGreen, like the active flags in the strip
+selected_item_prefix = "$(11)"
+selected_item_suffix = "$(end)"
+browser_playlist_prefix = "$(6)󰲸 $(end)"
+discard_colors_if_item_is_selected = no
+
+
+# colours
+colors_enabled = yes
+main_window_color = default
+color1 = 9
+color2 = 5
+empty_tag_color = 9
+window_border_color = 9
+active_window_border = 6

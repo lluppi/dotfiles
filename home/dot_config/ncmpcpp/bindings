@@ -1,0 +1,3 @@
+# ctrl+c quits like everywhere else (inside `music` that ends the whole tmux session)
+def_key "ctrl-c"
+  quit
