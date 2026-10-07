@@ -22,6 +22,12 @@ setopt share_history extended_history hist_ignore_all_dups hist_ignore_space his
 
 setopt auto_cd interactive_comments
 
+# let terminal pinentry follow the active tty (signed commits, gpg-agent ssh keys)
+if [[ -t 0 ]] && (( $+commands[gpg-connect-agent] )); then
+	export GPG_TTY=$TTY
+	gpg-connect-agent updatestartuptty /bye >/dev/null 2>&1
+fi
+
 # completion: full security check once a day, cached dump otherwise
 autoload -Uz compinit
 () {
@@ -32,9 +38,15 @@ autoload -Uz compinit
 		compinit -C
 	fi
 }
-zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompcache"
+# fzf-tab draws the menu; group headers become its switchable groups (< >)
+zstyle ':completion:*' menu no
+zstyle ':completion:*:descriptions' format '[%d]'
+zstyle ':completion:*:git-checkout:*' sort false
+zstyle ':fzf-tab:complete:(cd|z|__zoxide_z):*' fzf-preview 'eza -1 --color=always --icons $realpath'
 
 # keys: emacs mode, up/down search history by what's typed, ctrl+arrows jump words
 bindkey -e
@@ -48,6 +60,15 @@ bindkey '^[OB' down-line-or-beginning-search
 bindkey '^[[1;5D' backward-word
 bindkey '^[[1;5C' forward-word
 bindkey '^[[3~' delete-char
+bindkey '^[[H' beginning-of-line
+bindkey '^[OH' beginning-of-line
+bindkey '^[[F' end-of-line
+bindkey '^[OF' end-of-line
+
+# ctrl+x ctrl+e opens the current command line in $EDITOR
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey '^X^E' edit-command-line
 
 # ctrl+o copies the current command line to the clipboard
 copybuffer() {
@@ -68,10 +89,42 @@ alias vim="nvim"
 alias v="nvim"
 alias lg="lazygit"
 alias cat="bat"
-alias ls="eza --long --no-user --git --icons --ignore-glob=thunderbird"
-alias cls="clear && eza --long --no-user --git --icons --ignore-glob=thunderbird"
+alias ls="eza --icons --ignore-glob=thunderbird"
+alias ll="eza --long --no-user --git --icons --ignore-glob=thunderbird"
+alias la="ll --all"
+alias lt="eza --tree --level=2 --icons --git-ignore"
+alias cls="clear && ll"
 alias cdc="cd ~/clone"
 alias brd="bun run dev"
+
+# music: tmux session "music" talking to drome-lord (navidrome over mpd), reattaches if running.
+# quitting any pane (q, ctrl+c) ends the whole session; detach with the tmux prefix + d to keep it.
+# ncmpcpp's footer is hard-coded to at least one row, so a blank row sits above the strip.
+#   | ncmpcpp: queue (locked) | library / browser / search          |
+#   |-----------------------------------------------|---------------|
+#   | drome-lord cover: art, now playing, progress  | visualizer    |
+music() {
+	local s=music
+	if ! tmux has-session -t "=$s" 2>/dev/null; then
+		local main strip
+		main=$(tmux new-session -d -P -F '#{pane_id}' -s $s -x "$COLUMNS" -y "$LINES" ncmpcpp)
+		tmux set -t $s status off
+		tmux set-hook -t $s pane-exited "kill-session -t $s"
+		# ncmpcpp draws its separators in the plain text colour (fujiWhite), match tmux's borders to it
+		tmux set -w -t $s pane-border-style fg=#dcd7ba
+		tmux set -w -t $s pane-active-border-style fg=#dcd7ba
+		strip=$(tmux split-window -v -l 9 -P -F '#{pane_id}' -t "$main" 'drome-lord cover')
+		if [[ $OSTYPE == linux* ]]; then
+			tmux split-window -h -l 35% -t "$strip" "ncmpcpp -c $HOME/.config/ncmpcpp/visualizer.config"
+		fi
+		tmux select-pane -t "$main"
+	fi
+	if [[ -n $TMUX ]]; then
+		tmux switch-client -t "=$s"
+	else
+		tmux attach-session -t "=$s"
+	fi
+}
 
 # Run independent pi agents in persistent tmux sessions.
 pnew() {
@@ -107,6 +160,16 @@ pls() {
 	tmux list-sessions
 }
 
+# yazi file manager: q quits into the dir you were browsing, Q quits where you started
+y() {
+	local tmp cwd
+	tmp=$(mktemp -t yazi-cwd.XXXXXX)
+	command yazi "$@" --cwd-file="$tmp"
+	IFS= read -r -d '' cwd < "$tmp"
+	[[ -n $cwd && $cwd != $PWD ]] && builtin cd -- "$cwd"
+	command rm -f -- "$tmp"
+}
+
 kp() {
 	if (( $# != 1 )) || [[ $1 != <-> ]]; then
 		print -u2 "usage: kp <port>"
@@ -138,14 +201,21 @@ ssh() {
 # node versions: fnm switches on cd when a dir has .nvmrc / .node-version
 (( $+commands[fnm] )) && eval "$(fnm env --use-on-cd --shell zsh)"
 
-# fzf: ctrl+r history, ctrl+t files, alt+c cd
+# fzf: ctrl+t files, alt+c cd (ctrl+r gets taken over by atuin below)
 (( $+commands[fzf] )) && source <(fzf --zsh)
+
+# atuin: ctrl+r history search with dir / exit code / duration, up arrow keeps the prefix search above
+(( $+commands[atuin] )) && eval "$(atuin init zsh --disable-up-arrow)"
+
+# zoxide: z <part of a dir> jumps to the best match, zi picks interactively
+(( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
 
 (( $+commands[starship] )) && eval "$(starship init zsh)"
 
-# plugins last: syntax highlighting has to wrap every widget defined above it
-for plugin in zsh-autosuggestions zsh-syntax-highlighting; do
-	for dir in ${HOMEBREW_PREFIX:+$HOMEBREW_PREFIX/share} /usr/share/zsh/plugins; do
+# plugins last: fzf-tab takes over tab after compinit + fzf, syntax highlighting has to wrap every widget
+# fzf-tab comes from .chezmoiexternal.toml, the others from pacman/brew
+for plugin in fzf-tab zsh-autosuggestions zsh-syntax-highlighting; do
+	for dir in $HOME/.local/share/zsh/plugins ${HOMEBREW_PREFIX:+$HOMEBREW_PREFIX/share} /usr/share/zsh/plugins; do
 		if [[ -r $dir/$plugin/$plugin.zsh ]]; then
 			source "$dir/$plugin/$plugin.zsh"
 			break

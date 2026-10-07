@@ -40,9 +40,3 @@ start-ng() {
 
 	npm run task client leap "$location" "$environment" "$branch"
 }
-
-# Let terminal pinentry follow the active TTY for signed commits.
-if [[ -t 0 ]] && (( $+commands[gpg-connect-agent] )); then
-	export GPG_TTY=$(tty)
-	gpg-connect-agent updatestartuptty /bye >/dev/null 2>&1
-fi

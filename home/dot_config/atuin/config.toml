@@ -1,0 +1,10 @@
+# ctrl+r: history in sqlite with dir, exit code and duration. up arrow stays zsh prefix search (see zshrc)
+# sync is opt-in (atuin register / atuin login, end-to-end encrypted), nothing leaves the machine until then
+
+style = "compact"
+inline_height = 20
+search_mode = "fuzzy"
+# enter runs the picked command, tab drops it on the prompt to edit first
+enter_accept = true
+show_preview = true
+update_check = false

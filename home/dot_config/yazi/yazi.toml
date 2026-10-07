@@ -1,0 +1,6 @@
+# open with `y` (zshrc) so quitting with q leaves the shell in the last dir, Q quits without cd
+[mgr]
+sort_by = "natural"
+sort_dir_first = true
+show_hidden = true
+linemode = "size"

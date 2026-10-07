@@ -1,0 +1,15 @@
+# git-cloned on chezmoi apply, refreshed weekly: zsh plugins not packaged on every os, yazi flavor
+[".local/share/zsh/plugins/fzf-tab"]
+type = "git-repo"
+url = "https://github.com/Aloxaf/fzf-tab.git"
+refreshPeriod = "168h"
+clone.args = ["--depth", "1"]
+pull.args = ["--ff-only"]
+
+# yazi theme matching ghostty
+[".config/yazi/flavors/kanagawa.yazi"]
+type = "git-repo"
+url = "https://github.com/dangooddd/kanagawa.yazi.git"
+refreshPeriod = "168h"
+clone.args = ["--depth", "1"]
+pull.args = ["--ff-only"]
