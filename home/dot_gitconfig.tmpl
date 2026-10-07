@@ -29,6 +29,27 @@
 	# n / N jump between files in a diff
 	navigate = true
 	line-numbers = true
+	dark = true
+	# syntax colours come from the terminal palette, so they follow ghostty's kanagawa wave
+	syntax-theme = ansi
+	# kanagawa wave diff backgrounds (winterGreen / winterRed), brighter shade for the changed words
+	plus-style = syntax "#2B3328"
+	plus-emph-style = syntax "#3D5235"
+	minus-style = syntax "#43242B"
+	minus-emph-style = syntax "#6A2E38"
+	line-numbers-plus-style = "#76946A"
+	line-numbers-minus-style = "#C34043"
+	line-numbers-zero-style = "#54546D"
+	line-numbers-left-style = "#54546D"
+	line-numbers-right-style = "#54546D"
+	file-style = "#7E9CD8" bold
+	file-decoration-style = "#54546D" ul
+	hunk-header-style = file line-number syntax
+	hunk-header-decoration-style = "#54546D" box
+	hunk-header-file-style = "#957FB8"
+	hunk-header-line-number-style = "#727169"
+	# long lines wrap inside delta, under the line number gutter instead of before it
+	wrap-max-lines = unlimited
 {{- end }}
 [pull]
 	# rebase local commits onto the remote instead of a merge bubble; local merge commits are kept
