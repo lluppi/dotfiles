@@ -21,6 +21,15 @@
 	defaultBranch = main
 [core]
 	editor = nvim
+{{- if lookPath "delta" }}
+	pager = delta
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	# n / N jump between files in a diff
+	navigate = true
+	line-numbers = true
+{{- end }}
 [pull]
 	# rebase local commits onto the remote instead of a merge bubble; local merge commits are kept
 	rebase = merges

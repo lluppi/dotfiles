@@ -1,3 +1,6 @@
+git:
+  pagers:
+    - pager: delta --dark --paging=never --line-numbers
 customCommands:
   # select a branch in the branches panel, ctrl+s, pick the base: pushes the branch,
   # opens the pr (or reuses the open one) and arms auto-merge, so it lands once ci is green
