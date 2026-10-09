@@ -23,6 +23,7 @@ local function stopServices()
     "masterLayout",
     "tilingFocus",
     "heliumZoom",
+    "sioyekF8",
   }
   for _, name in ipairs(serviceNames) do
     local service = rawget(_G, name)
@@ -50,6 +51,7 @@ minimizedWindows = require("minimized_windows").start()
 systemIndicator = require("system_indicator").start()
 microsoftAutoUpdateGuard = require("microsoft_autoupdate_guard").start()
 lidAwakeLock = require("lid_awake_lock").start()
+sioyekF8 = require("sioyek_f8").start()
 
 -- macOS owns Ctrl+Up (Mission Control) and Ctrl+Down (App Exposé) at the
 -- WindowServer level, which is what swallows vim's <C-Up>/<C-Down>.

@@ -96,6 +96,7 @@ alias lt="eza --tree --level=2 --icons --git-ignore"
 alias cls="clear && ll"
 alias cdc="cd ~/clone"
 alias brd="bun run dev"
+alias pdf="open -a sioyek"
 
 # music: tmux session "music" talking to drome-lord (navidrome over mpd), reattaches if running.
 # quitting any pane (q, ctrl+c) ends the whole session; detach with the tmux prefix + d to keep it.
