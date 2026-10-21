@@ -26,6 +26,7 @@ require("lazy").setup({
                 "javascript", "typescript", "lua", "vim", "vimdoc", "query",
                 "scss", "svelte", "html", "css", "go", "rust", "toml",
                 "bash", "regex", "zig",
+                "markdown", "markdown_inline", "yaml", "latex",
             }
 
             treesitter.setup({
@@ -196,8 +197,20 @@ require("lazy").setup({
     -- },
 
     {
-        "OXY2DEV/markview.nvim",
-        lazy = false,
+        "MeanderingProgrammer/render-markdown.nvim",
+        ft = { "markdown" },
+        dependencies = { "nvim-tree/nvim-web-devicons" },
+        config = function()
+            require("render-markdown").setup({
+                completions = { lsp = { enabled = true } }, -- checkbox/callout completion via blink
+                pipe_table = {
+                    preset = "round",
+                    wrap = true, -- wrap cells so wide tables fit the window when 'wrap' is on
+                },
+                code = { width = "block", right_pad = 1 },
+                heading = { width = "block", right_pad = 1 },
+            })
+        end,
     },
 
     {
