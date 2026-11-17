@@ -10,7 +10,9 @@
 .config/systemd
 .config/ghostty/theme.css
 .config/zsh/linux.zsh
-.local/bin
+.local/bin/*
+!.local/bin/aerospace-*.sh
+!.local/bin/macos-free-ctrl-arrows.sh
 .local/share/themes
 {{ end }}
 
@@ -18,5 +20,7 @@
 .aerospace.toml
 .hammerspoon
 .config/zsh/darwin.zsh
+.local/bin/aerospace-*.sh
+.local/bin/macos-free-ctrl-arrows.sh
 Library
 {{ end }}
