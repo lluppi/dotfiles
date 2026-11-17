@@ -12,6 +12,20 @@ M.placementQueue = {}
 M.windowHomes = {}
 M.windowHomeSeenAt = {}
 
+-- Scripts started from Hammerspoon skip their own `hs -c` monitor-count
+-- round-trip. Evaluated at task start (not enqueue time) so queued jobs see
+-- the current value. A transient 0 leaves the variable unset (script falls back).
+local function withMonitorCount(task)
+  local count = #hs.screen.allScreens()
+  if count > 0 then
+    local env = task:environment() or {}
+    env.AEROSPACE_MONITOR_COUNT = tostring(count)
+    task:setEnvironment(env)
+  end
+  return task
+end
+M.withMonitorCount = withMonitorCount
+
 local function pruneWindowHomes()
   local homes = {}
   for windowId in pairs(M.windowHomes) do
@@ -82,7 +96,7 @@ function M.retile()
     end
   end, { "--all" })
 
-  if not M.retileTask:start() then
+  if not withMonitorCount(M.retileTask):start() then
     M.retileTask = nil
   end
 end
@@ -115,7 +129,7 @@ local function runNextPlacement()
     runNextPlacement()
   end, job)
 
-  if not M.placementTask:start() then
+  if not withMonitorCount(M.placementTask):start() then
     M.placementTask = nil
   end
 end
@@ -163,7 +177,7 @@ local function runRepair()
     end
   end, { "--repair-visible" })
 
-  if not M.repairTask:start() then
+  if not withMonitorCount(M.repairTask):start() then
     M.repairTask = nil
   end
 end
@@ -178,21 +192,27 @@ local function checkTreeFingerprint()
     return
   end
 
-  M.fingerprintTask = hs.task.new("/bin/sh", function(exitCode, stdout)
+  M.fingerprintTask = hs.task.new(aerospace, function(exitCode, stdout)
     M.fingerprintTask = nil
     if not M.running then
       return
     end
     if exitCode == 0 then
-      if M.treeFingerprint ~= nil and M.treeFingerprint ~= stdout then
+      local lines = {}
+      for line in (stdout or ""):gmatch("[^\r\n]+") do
+        table.insert(lines, line)
+      end
+      table.sort(lines)
+      local fingerprint = table.concat(lines, "\n")
+      if M.treeFingerprint ~= nil and M.treeFingerprint ~= fingerprint then
         runRepair()
       end
-      M.treeFingerprint = stdout
+      M.treeFingerprint = fingerprint
       -- Keep temporarily absent/minimized windows so a restore can return to
       -- its real workspace instead of teleporting through the current one.
       -- Bound only the oldest history rather than pruning from one snapshot.
       local seenAt = hs.timer.secondsSinceEpoch()
-      for line in stdout:gmatch("[^\r\n]+") do
+      for _, line in ipairs(lines) do
         local id, workspace = line:match("^(%d+)|([^|]+)|")
         -- Only configured workspaces may become restore homes. AeroSpace can
         -- briefly resurrect stale names while macOS restores displays/windows;
@@ -209,10 +229,7 @@ local function checkTreeFingerprint()
       M.fingerprintPending = false
       checkTreeFingerprint()
     end
-  end, {
-    "-c",
-    aerospace .. " list-windows --all --format '%{window-id}|%{workspace}|%{window-layout}' | /usr/bin/sort",
-  })
+  end, { "list-windows", "--all", "--format", "%{window-id}|%{workspace}|%{window-layout}" })
 
   if not M.fingerprintTask:start() then
     M.fingerprintTask = nil
@@ -233,35 +250,16 @@ local function startSubscription()
   if not M.running then
     return
   end
-  if M.subscriptionTask and M.subscriptionTask:isRunning() then
-    return
+  if M.stream then
+    M.stream:stop()
   end
-
-  M.subscriptionTask = hs.task.new(aerospace, function()
-    M.subscriptionTask = nil
-    if M.running then
-      M.subscriptionRestartTimer = hs.timer.doAfter(1, startSubscription)
+  M.stream = require("aerospace_events").new({ "window-detected", "focus-changed" }, function(event)
+    if event._event == "window-detected" and event.windowId then
+      queuePlacement(event.windowId)
+    elseif event._event == "focus-changed" then
+      scheduleFingerprintCheck()
     end
-  end, function(_, stdout)
-    if stdout then
-      for line in stdout:gmatch("[^\r\n]+") do
-        local ok, event = pcall(hs.json.decode, line)
-        if ok and type(event) == "table" then
-          if event._event == "window-detected" and event.windowId then
-            queuePlacement(event.windowId)
-          elseif event._event == "focus-changed" then
-            scheduleFingerprintCheck()
-          end
-        end
-      end
-    end
-    return true
-  end, { "subscribe", "window-detected", "focus-changed", "--no-send-initial" })
-
-  if not M.subscriptionTask:start() then
-    M.subscriptionTask = nil
-    M.subscriptionRestartTimer = hs.timer.doAfter(1, startSubscription)
-  end
+  end, { onStart = scheduleFingerprintCheck }):start()
 end
 
 function M.snapshot()
@@ -270,7 +268,7 @@ function M.snapshot()
     retileRunning = M.retileTask and M.retileTask:isRunning() or false,
     retilePending = M.retilePending,
     retryCount = M.retryCount,
-    subscriptionRunning = M.subscriptionTask and M.subscriptionTask:isRunning() or false,
+    subscriptionRunning = M.stream and M.stream:isRunning() or false,
     placementRunning = M.placementTask and M.placementTask:isRunning() or false,
     queuedPlacements = #M.placementQueue,
     repairRunning = M.repairTask and M.repairTask:isRunning() or false,
@@ -308,13 +306,12 @@ end
 
 function M.stop()
   M.running = false
-  for _, timer in ipairs({ M.retileTimer, M.subscriptionRestartTimer, M.fingerprintTimer }) do
+  for _, timer in ipairs({ M.retileTimer, M.fingerprintTimer }) do
     if timer then
       timer:stop()
     end
   end
   M.retileTimer = nil
-  M.subscriptionRestartTimer = nil
   M.fingerprintTimer = nil
   if M.screenWatcher then
     M.screenWatcher:stop()
@@ -324,13 +321,16 @@ function M.stop()
     M.restoreFilter:delete()
     M.restoreFilter = nil
   end
-  for _, task in ipairs({ M.retileTask, M.subscriptionTask, M.placementTask, M.fingerprintTask, M.repairTask }) do
+  for _, task in ipairs({ M.retileTask, M.placementTask, M.fingerprintTask, M.repairTask }) do
     if task and task:isRunning() then
       task:terminate()
     end
   end
   M.retileTask = nil
-  M.subscriptionTask = nil
+  if M.stream then
+    M.stream:stop()
+    M.stream = nil
+  end
   M.placementTask = nil
   M.fingerprintTask = nil
   M.repairTask = nil

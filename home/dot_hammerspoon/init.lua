@@ -14,6 +14,11 @@ local function stopServices()
     keyboardShortcutTap = nil
   end
 
+  if perfGcTimer then
+    perfGcTimer:stop()
+    perfGcTimer = nil
+  end
+
   local serviceNames = {
     "lidAwakeLock",
     "microsoftAutoUpdateGuard",
@@ -24,6 +29,8 @@ local function stopServices()
     "tilingFocus",
     "heliumZoom",
     "sioyekF8",
+    "micGuard",
+    "meetingReminder",
   }
   for _, name in ipairs(serviceNames) do
     local service = rawget(_G, name)
@@ -52,6 +59,8 @@ systemIndicator = require("system_indicator").start()
 microsoftAutoUpdateGuard = require("microsoft_autoupdate_guard").start()
 lidAwakeLock = require("lid_awake_lock").start()
 sioyekF8 = require("sioyek_f8").start()
+micGuard = require("mic_guard").start()
+meetingReminder = require("meeting_reminder").start()
 
 -- macOS owns Ctrl+Up (Mission Control) and Ctrl+Down (App Exposé) at the
 -- WindowServer level, which is what swallows vim's <C-Up>/<C-Down>.
@@ -135,33 +144,42 @@ keyboardShortcutTap = hs.eventtap.new({
   hs.eventtap.event.types.scrollWheel,
 }, function(event)
   local flags = event:getFlags()
-  local application = hs.application.frontmostApplication()
-  if not application then
-    return false
-  end
 
   local function rewrite(modifiers)
     event:setFlags(modifiers)
     return true, { event }
   end
 
+  -- The frontmost-application lookup is an AX round-trip, so it is only done
+  -- on the paths that use it: this Ctrl+wheel branch and the keyDown path.
   -- Firefox's macOS Command+wheel action is page scrolling, not zooming.
   -- Convert Ctrl+wheel direction directly into Firefox's Zoom menu commands.
   if event:getType() == hs.eventtap.event.types.scrollWheel then
-    if application:bundleID() == "org.mozilla.firefox" and flags.ctrl and not flags.cmd and not flags.alt then
-      local delta = event:getProperty(hs.eventtap.event.properties.scrollWheelEventDeltaAxis1)
-      if delta == 0 then
-        return false
-      end
-
-      local now = hs.timer.secondsSinceEpoch()
-      if now - lastFirefoxWheelZoomAt >= 0.08 then
-        lastFirefoxWheelZoomAt = now
-        local command = delta > 0 and "Zoom In" or "Zoom Out"
-        application:selectMenuItem({ "View", "Zoom", command })
-      end
-      return true
+    if not flags.ctrl or flags.cmd or flags.alt then
+      return false
     end
+
+    local application = hs.application.frontmostApplication()
+    if not application or application:bundleID() ~= "org.mozilla.firefox" then
+      return false
+    end
+
+    local delta = event:getProperty(hs.eventtap.event.properties.scrollWheelEventDeltaAxis1)
+    if delta == 0 then
+      return false
+    end
+
+    local now = hs.timer.secondsSinceEpoch()
+    if now - lastFirefoxWheelZoomAt >= 0.08 then
+      lastFirefoxWheelZoomAt = now
+      local command = delta > 0 and "Zoom In" or "Zoom Out"
+      application:selectMenuItem({ "View", "Zoom", command })
+    end
+    return true
+  end
+
+  local application = hs.application.frontmostApplication()
+  if not application then
     return false
   end
 
@@ -169,15 +187,15 @@ keyboardShortcutTap = hs.eventtap.new({
 
   -- Firefox follows macOS's document-scrolling meaning for Home/End. In text
   -- inputs, translate them to line navigation while preserving page behavior.
-  if not flags.ctrl and not flags.cmd and not flags.alt and firefoxTextInputIsFocused(application) then
-    if keyCode == hs.keycodes.map.home or keyCode == hs.keycodes.map["end"] then
-      event:setKeyCode(keyCode == hs.keycodes.map.home and hs.keycodes.map.left or hs.keycodes.map.right)
-      local modifiers = { cmd = true }
-      if flags.shift then
-        modifiers.shift = true
-      end
-      return rewrite(modifiers)
+  if (keyCode == hs.keycodes.map.home or keyCode == hs.keycodes.map["end"])
+      and not flags.ctrl and not flags.cmd and not flags.alt
+      and firefoxTextInputIsFocused(application) then
+    event:setKeyCode(keyCode == hs.keycodes.map.home and hs.keycodes.map.left or hs.keycodes.map.right)
+    local modifiers = { cmd = true }
+    if flags.shift then
+      modifiers.shift = true
     end
+    return rewrite(modifiers)
   end
 
   if not flags.ctrl or flags.cmd or flags.alt then
@@ -255,6 +273,14 @@ keyboardShortcutTap = hs.eventtap.new({
 end)
 
 keyboardShortcutTap:start()
+
+-- Finished hs.task objects and other collectable garbage are only reclaimed
+-- once a GC cycle runs. An explicit cycle every ten minutes keeps the Lua heap
+-- flat instead of letting it grow between allocations, which is what made the
+-- teardown after a long uptime slow.
+perfGcTimer = hs.timer.doEvery(600, function()
+  collectgarbage("collect")
+end)
 
 hs.shutdownCallback = stopServices
 

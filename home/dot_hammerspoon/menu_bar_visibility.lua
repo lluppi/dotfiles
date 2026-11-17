@@ -32,6 +32,17 @@ local function refresh()
   end
 end
 
+-- windowMoved bursts (one per tile on every retile) share one refresh.
+local function refreshCoalesced()
+  if M.movedTimer then
+    return
+  end
+  M.movedTimer = hs.timer.doAfter(0, function()
+    M.movedTimer = nil
+    refresh()
+  end)
+end
+
 function M.subscribe(listener)
   listeners[listener] = true
 
@@ -46,10 +57,10 @@ function M.subscribe(listener)
     M.windowFilter:subscribe({
       hs.window.filter.windowFocused,
       hs.window.filter.windowUnfocused,
-      hs.window.filter.windowMoved,
       hs.window.filter.windowFullscreened,
       hs.window.filter.windowUnfullscreened,
     }, refresh)
+    M.windowFilter:subscribe(hs.window.filter.windowMoved, refreshCoalesced)
     M.screenWatcher = hs.screen.watcher.new(refresh):start()
   end
 end
@@ -65,6 +76,10 @@ function M.unsubscribe(listener)
     if M.screenWatcher then
       M.screenWatcher:stop()
       M.screenWatcher = nil
+    end
+    if M.movedTimer then
+      M.movedTimer:stop()
+      M.movedTimer = nil
     end
     visible = nil
   end

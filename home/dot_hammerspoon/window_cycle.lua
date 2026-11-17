@@ -3,29 +3,40 @@ local M = {}
 local aerospace = "/opt/homebrew/bin/aerospace"
 
 local function aerospaceWindows()
-  local workspaceOutput, workspaceOK = hs.execute(
-    aerospace .. " list-workspaces --focused"
-  )
-  local windowsOutput, windowsOK = hs.execute(
-    aerospace .. " list-windows --all --format '%{window-id}|%{workspace}'"
+  -- One AeroSpace request instead of two: hs.execute is synchronous, so every
+  -- extra call stalls the main thread (and every eventtap with it).
+  local output, ok = hs.execute(
+    aerospace .. [[ eval -- "list-workspaces --focused --format 'focused|%{workspace}' && list-windows --all --format 'win|%{window-id}|%{workspace}'"]]
   )
 
-  if not workspaceOK or not windowsOK then
+  if not ok then
     return {}, {}
   end
 
-  local focusedWorkspace = workspaceOutput:match("([^\r\n]+)")
+  local focusedWorkspace = nil
+  local windowIds = {}
+  local windowWorkspaces = {}
+
+  for line in output:gmatch("[^\r\n]+") do
+    if not focusedWorkspace then
+      focusedWorkspace = line:match("^focused|(.+)$")
+    end
+
+    local windowId, workspace = line:match("^win|(%d+)|(.+)$")
+    windowId = tonumber(windowId)
+    if windowId then
+      table.insert(windowIds, windowId)
+      windowWorkspaces[#windowIds] = workspace
+    end
+  end
+
   local workspaceWindowIds = {}
   local managedWindowIds = {}
 
-  for line in windowsOutput:gmatch("[^\r\n]+") do
-    local windowId, workspace = line:match("^(%d+)|(.+)$")
-    windowId = tonumber(windowId)
-    if windowId then
-      managedWindowIds[windowId] = true
-      if workspace == focusedWorkspace then
-        table.insert(workspaceWindowIds, windowId)
-      end
+  for index, windowId in ipairs(windowIds) do
+    managedWindowIds[windowId] = true
+    if windowWorkspaces[index] == focusedWorkspace then
+      table.insert(workspaceWindowIds, windowId)
     end
   end
 

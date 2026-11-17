@@ -73,6 +73,18 @@ local layoutScript = os.getenv("HOME") .. "/.local/bin/aerospace-master-layout.s
 -- the Dock. Requesting repairs immediately lets the tree correction land
 -- while that animation is still playing, so the window arrives already tiled
 -- instead of appearing as a column and snapping afterwards.
+-- Scripts started from Hammerspoon skip their own `hs -c` monitor-count
+-- round-trip. Computed at task start; a transient 0 leaves it unset.
+local function withMonitorCount(task)
+  local count = #hs.screen.allScreens()
+  if count > 0 then
+    local env = task:environment() or {}
+    env.AEROSPACE_MONITOR_COUNT = tostring(count)
+    task:setEnvironment(env)
+  end
+  return task
+end
+
 local function scheduleLayoutRepair()
   for _, delay in ipairs({ 0.1, 0.45 }) do
     local timer
@@ -87,7 +99,7 @@ local function scheduleLayoutRepair()
         M.repairTasks[task] = nil
       end, { "--repair-visible" })
       M.repairTasks[task] = true
-      if not task:start() then
+      if not withMonitorCount(task):start() then
         M.repairTasks[task] = nil
       end
     end)
@@ -105,6 +117,12 @@ end
 local function fetchBadge(key, appName, done)
   local existingTask = M.badgeTasks[key]
   if existingTask and existingTask:isRunning() then
+    return
+  end
+
+  -- Not running: lsappinfo would report nothing, so skip the spawn.
+  if hs.application.get(appName) == nil then
+    done(nil)
     return
   end
 

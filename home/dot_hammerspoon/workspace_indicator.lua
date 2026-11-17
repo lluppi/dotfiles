@@ -9,7 +9,6 @@ local defaultWorkspaces = { "1", "2", "3", "4" }
 local cellWidth = 22
 local canvasHeight = 28
 local edgeMargin = 8
-local fallbackPollInterval = 30
 
 local function hexColor(hex, alpha)
   local value = hex:gsub("#", "")
@@ -28,15 +27,12 @@ local colors = {
 local darkForeground = colors.foreground
 local lightForeground = hexColor("#FFFFFF")
 
-local queryScript = [[
-focused=$(/opt/homebrew/bin/aerospace list-workspaces --focused) || exit 1
-printf 'focused:%s\n' "$focused"
-/opt/homebrew/bin/aerospace list-workspaces --monitor all --visible \
-  --format 'visible:%{monitor-appkit-nsscreen-screens-id}:%{workspace}' || exit 1
-/opt/homebrew/bin/aerospace list-windows --all --format '%{workspace}' |
-  /usr/bin/sort -u |
-  /usr/bin/sed 's/^/occupied:/'
-]]
+-- One AeroSpace request for the whole indicator state: focused workspace,
+-- visible workspace per monitor, and occupied workspaces (one line per window;
+-- parseWorkspaceState collapses duplicates).
+local stateQuery = "list-workspaces --focused --format 'focused:%{workspace}' && "
+  .. "list-workspaces --monitor all --visible --format 'visible:%{monitor-appkit-nsscreen-screens-id}:%{workspace}' && "
+  .. "list-windows --all --format 'occupied:%{workspace}'"
 
 M.canvases = {}
 M.activeWorkspace = nil
@@ -229,7 +225,7 @@ end
 local topologySettleDelay = 0.5
 local topologyRetryDelay = 1
 local topologyMaxAttempts = 6
-local topologyDriftPollInterval = 15
+local pollInterval = 15
 
 -- The monitor count is authoritative and comes from macOS. AeroSpace's own
 -- monitor list can lag a display change, which made workspaces 5-8 look legal
@@ -242,6 +238,29 @@ local function topologyArgs(extra)
   end
   return args
 end
+
+-- Same rule as aerospace-workspace-topology.sh --check: drift is a disallowed
+-- workspace that is visible or still holds windows. Allowed is 1-4 on a single
+-- display and 1-8 otherwise. visibleWorkspaces is keyed by monitor index.
+local function detectDrift(visibleWorkspaces, occupiedWorkspaces)
+  local maxAllowed = #hs.screen.allScreens() == 1 and 4 or 8
+  local function disallowed(workspace)
+    local n = workspace:match("^[1-8]$") and tonumber(workspace)
+    return not (n and n <= maxAllowed)
+  end
+  for _, workspace in pairs(visibleWorkspaces) do
+    if disallowed(workspace) then
+      return true
+    end
+  end
+  for workspace in pairs(occupiedWorkspaces) do
+    if disallowed(workspace) then
+      return true
+    end
+  end
+  return false
+end
+M._detectDrift = detectDrift
 
 local reconcileTopology
 
@@ -280,16 +299,14 @@ end
 
 -- Read-only verification of the live topology. After a trigger it re-runs the
 -- pass while drift remains, so a burst that produced no action converges fast.
--- The periodic poll uses the same check but keeps a single attempt of its own,
--- so a stubborn topology cannot spam the retry ladder every 15 seconds.
-local function verifyTopology(fromPoll)
+-- The periodic drift poll no longer runs this script; it uses detectDrift on
+-- the indicator's own query (see refresh).
+local function verifyTopology()
   if not M.running then
     return
   end
   if M.driftTask and M.driftTask:isRunning() then
-    if not fromPoll then
-      M.topologyPending = true
-    end
+    M.topologyPending = true
     return
   end
 
@@ -306,13 +323,7 @@ local function verifyTopology(fromPoll)
     if exitCode == 0 then
       M.topologyAttempt = 0
     elseif exitCode == 1 then
-      if fromPoll then
-        M.topologyAttempt = 0
-        hs.printf("workspace topology drift detected; reconciling")
-        scheduleReconcileTopology(0)
-      else
-        retryTopology("workspace topology reconciliation")
-      end
+      retryTopology("workspace topology reconciliation")
     else
       M.topologyAttempt = 0
       hs.printf("workspace topology check failed: %s", stderr)
@@ -442,18 +453,26 @@ local function parseWorkspaceState(output)
   return activeWorkspace, visibleWorkspaces, occupiedWorkspaces
 end
 
-refresh = function()
+refresh = function(reason)
   if not M.running then
     return
   end
 
   if M.refreshTask and M.refreshTask:isRunning() then
     M.refreshPending = true
+    if reason == "poll" then
+      M.pendingPollCheck = true
+    end
     return
   end
 
+  -- Only a poll-originated run (or one that absorbed a coalesced poll) checks
+  -- for drift, which keeps the old 15 s trigger cadence.
+  local pollCheck = reason == "poll" or M.pendingPollCheck == true
+  M.pendingPollCheck = false
+
   local task
-  task = hs.task.new("/bin/sh", function(exitCode, stdout, stderr)
+  task = hs.task.new(aerospace, function(exitCode, stdout, stderr)
     if M.refreshTask ~= task then
       return
     end
@@ -465,6 +484,11 @@ refresh = function()
     if exitCode == 0 then
       M.activeWorkspace, M.visibleWorkspaces, M.occupiedWorkspaces = parseWorkspaceState(stdout)
       render()
+      if pollCheck and detectDrift(M.visibleWorkspaces, M.occupiedWorkspaces) then
+        M.topologyAttempt = 0
+        hs.printf("workspace topology drift detected; reconciling")
+        scheduleReconcileTopology(0)
+      end
     else
       hs.printf("workspace indicator refresh failed: %s", stderr)
     end
@@ -473,7 +497,7 @@ refresh = function()
       M.refreshPending = false
       scheduleRefresh()
     end
-  end, { "-c", queryScript })
+  end, { "eval", "--", stateQuery })
   M.refreshTask = task
 
   if not task:start() and M.refreshTask == task then
@@ -583,20 +607,18 @@ function M.start()
     rebuildCanvases()
     scheduleReconcileTopology()
   end):start()
-  -- Safety net that does not depend on any watcher firing. If a display change
-  -- never reaches hs.screen.watcher, drift would otherwise persist until the
-  -- next unrelated trigger. The check is read-only and cheap.
-  M.driftPollTimer = hs.timer.doEvery(topologyDriftPollInterval, function()
-    verifyTopology(true)
-  end)
   M.clickTap = hs.eventtap.new({
     hs.eventtap.event.types.leftMouseDown,
     hs.eventtap.event.types.leftMouseUp,
     hs.eventtap.event.types.leftMouseDragged,
   }, handlePickerMouseEvent):start()
-  -- AeroSpace events drive normal updates. This is only a recovery path for a
-  -- missed event or a restarted subscription.
-  M.pollTimer = hs.timer.doEvery(fallbackPollInterval, refresh)
+  -- AeroSpace events drive normal updates. The poll is a recovery path for a
+  -- missed event or restarted subscription, and also the drift safety net that
+  -- does not depend on any watcher firing: poll-originated refreshes run
+  -- detectDrift on the query result (no extra process).
+  M.pollTimer = hs.timer.doEvery(pollInterval, function()
+    refresh("poll")
+  end)
   refresh()
   startSubscription()
   return M
@@ -605,6 +627,7 @@ end
 function M.stop()
   M.running = false
   M.refreshPending = false
+  M.pendingPollCheck = false
 
   if M.appearanceListener then
     menuBarAppearance.unsubscribe(M.appearanceListener)
@@ -621,7 +644,6 @@ function M.stop()
     M.refreshDebounce,
     M.subscriptionRestartTimer,
     M.topologyTimer,
-    M.driftPollTimer,
   }) do
     if timer then
       timer:stop()
@@ -631,7 +653,6 @@ function M.stop()
   M.refreshDebounce = nil
   M.subscriptionRestartTimer = nil
   M.topologyTimer = nil
-  M.driftPollTimer = nil
 
   if M.screenWatcher then
     M.screenWatcher:stop()
