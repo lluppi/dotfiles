@@ -72,7 +72,7 @@ while read -r commit; do
 	grep -qx "$id" <<<"$landed" && continue
 	before=$(git -C "$worktree" rev-parse HEAD)
 	git -C "$worktree" cherry-pick --empty=drop "$commit" >/dev/null 2>&1 ||
-		die "$(git log -1 --format='%h "%s"' "$commit") doesn't apply on top of $remote/$base (a conflict, or it builds on a commit $base doesn't have); sort it out on $branch, then ctrl+s again"
+		die "$(git log -1 --format='%h "%s"' "$commit") doesn't apply on top of $remote/$base (a conflict, or it builds on a commit $base doesn't have); sort it out on $branch, then ctrl+alt+s again"
 	[[ $(git -C "$worktree" rev-parse HEAD) != "$before" ]] || continue # already in base under another patch id
 	name="$prefix${id:0:8}"
 	# two commits with the same diff (a revert of a revert) would share a name

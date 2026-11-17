@@ -10,12 +10,44 @@ git:
     - command: delta --paging=never
       name: delta unified
 customCommands:
-  # branches panel: select a branch, ctrl+s, pick the base. every commit the base doesn't have becomes
+  # branches panel: select a branch, ctrl+s, pick the base. pushes the branch
+  # and opens one normal pr into the base (or prints the open pr's url), then
+  # asks whether to turn on auto-merge (merges itself once checks are green)
+  - key: "<ctrl+s>"
+    context: "localBranches"
+    description: "ship branch: normal pr"
+    prompts:
+      - type: "menu"
+        key: "Base"
+        title: "pr {{.SelectedLocalBranch.Name}} into"
+        options:
+          - value: "master"
+          - value: "test"
+      - type: "menu"
+        key: "Merge"
+        title: "auto-merge once green?"
+        options:
+          - value: "auto"
+            name: "auto-merge"
+            description: "merges itself when checks pass"
+          - value: "manual"
+            name: "manual"
+            description: "just open the pr"
+    command: >-
+      b={{.SelectedLocalBranch.Name | quote}};
+      git push --force-with-lease -u origin "$b" &&
+      url=$(gh pr list --head "$b" --state open --json url --jq '.[0].url') &&
+      if [ -n "$url" ]; then echo "$url";
+      else gh pr create --base {{.Form.Base | quote}} --head "$b" --fill; fi
+      {{if eq .Form.Merge "auto"}}&& gh pr merge "$b" --auto --merge{{end}}
+    output: terminal
+
+  # branches panel: select a branch, ctrl+alt+s, pick the base. every commit the base doesn't have becomes
   # one pr in a github stacked pr (oldest at the bottom); run it again after more commits and the
   # same prs update with new ones added on top. a single commit is a plain pr with auto-merge.
   # stacks can't auto-merge: once checks are green, ctrl+g merges the whole stack in one go.
   # script: ~/.config/lazygit/stack-pr.sh (needs: gh extension install github/gh-stack)
-  - key: "<ctrl+s>"
+  - key: "<ctrl+alt+s>"
     context: "localBranches"
     description: "ship branch: stacked pr, one pr per commit"
     prompts:
