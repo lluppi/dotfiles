@@ -54,6 +54,8 @@ require("lazy").setup({
                 svelte          = { "biome" },
                 json            = { "biome" },
                 jsonc           = { "biome" },
+                css             = { "biome" },
+                yaml            = { "biome" },
             }
 
             if vim.fn.executable("rustfmt") == 1 then
