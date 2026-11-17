@@ -62,3 +62,9 @@ keybind = ctrl+a>down=goto_split:down
 keybind = ctrl+a>.=resize_split:right,50
 keybind = ctrl+a>,=resize_split:left,50
 keybind = shift+enter=text:\x1b\x0d
+{{- if eq .chezmoi.os "darwin" }}
+
+# mac only: let herdr get ctrl+tab / ctrl+shift+tab (no ghostty tabs on mac)
+keybind = ctrl+tab=unbind
+keybind = ctrl+shift+tab=unbind
+{{- end }}
